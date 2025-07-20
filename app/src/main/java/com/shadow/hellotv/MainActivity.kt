@@ -1,12 +1,15 @@
 package com.shadow.hellotv
 
+import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -19,17 +22,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,27 +42,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import androidx.media3.common.util.UnstableApi
 import com.shadow.hellotv.model.ChannelItem
+import com.shadow.hellotv.ui.ChannelChangeOverlay
+import com.shadow.hellotv.ui.ChannelListSidebar
 import com.shadow.hellotv.ui.ErrorMessage
 import com.shadow.hellotv.ui.ExitDialog
 import com.shadow.hellotv.ui.ExoPlayerView
 import com.shadow.hellotv.ui.TvControlsHint
+import com.shadow.hellotv.ui.VolumeOverlay
 import com.shadow.hellotv.ui.theme.HelloTVTheme
 import com.shadow.hellotv.ui.theme.IntroUi
 import com.shadow.hellotv.utils.KeepScreenOn
 import com.shadow.hellotv.utils.calculateDistance
 import com.shadow.hellotv.utils.loadPlaylist
-import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,7 +78,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             HelloTVTheme {
                 KeepScreenOn()
-                TVPlayerApp()
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                    TVPlayerApp()
+                }
             }
         }
     }
@@ -87,8 +90,12 @@ const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/playlist.json"
 const val MIN_DRAG_DISTANCE = 100f
 const val LEFT_DRAG_ZONE = 0.3f
 
+@OptIn(UnstableApi::class)
 @Composable
 fun TVPlayerApp() {
+    val context = LocalContext.current
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
     var channels by remember { mutableStateOf<List<ChannelItem>>(emptyList()) }
     var selectedChannelIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
@@ -99,6 +106,8 @@ fun TVPlayerApp() {
     var showControlsHint by remember { mutableStateOf(true) }
     var showExitDialog by remember { mutableStateOf(false) }
     var showSettingsOverlay by remember { mutableStateOf(false) }
+    var showVolumeOverlay by remember { mutableStateOf(false) }
+    var currentVolume by remember { mutableIntStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)) }
     var isDragging by remember { mutableStateOf(false) }
     var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
 
@@ -115,7 +124,7 @@ fun TVPlayerApp() {
 
     LaunchedEffect(showChannelChangeOverlay) {
         if (showChannelChangeOverlay) {
-            delay(2000)
+            delay(4000)
             showChannelChangeOverlay = false
         }
     }
@@ -134,6 +143,13 @@ fun TVPlayerApp() {
         }
     }
 
+    LaunchedEffect(showVolumeOverlay) {
+        if (showVolumeOverlay) {
+            delay(3000)
+            showVolumeOverlay = false
+        }
+    }
+
     LaunchedEffect(selectedChannelIndex) {
         if (channels.isNotEmpty()) {
             showChannelChangeOverlay = true
@@ -146,7 +162,6 @@ fun TVPlayerApp() {
             isLoading = true
             errorMessage = null
             channels = loadPlaylist(PLAYLIST_URL)
-            println(channels)
             if (channels.isEmpty()) {
                 errorMessage = "No channels found in playlist"
             }
@@ -168,10 +183,30 @@ fun TVPlayerApp() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
             .onKeyEvent { keyEvent ->
                 if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_VOLUME_UP -> {
+                            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                            val newVolume = (currentVolume + 1).coerceAtMost(maxVolume)
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+                            currentVolume = newVolume
+                            showVolumeOverlay = true
+                            true
+                        }
+                        KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                            val newVolume = (currentVolume - 1).coerceAtLeast(0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+                            currentVolume = newVolume
+                            showVolumeOverlay = true
+                            true
+                        }
+                        KeyEvent.KEYCODE_VOLUME_MUTE -> {
+                            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, 0)
+                            currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                            showVolumeOverlay = true
+                            true
+                        }
                         KeyEvent.KEYCODE_DPAD_UP -> {
                             if (showExitDialog) {
                                 false
@@ -263,65 +298,19 @@ fun TVPlayerApp() {
                 Row(modifier = Modifier.fillMaxSize()) {
                     // Channel List Sidebar
                     if (showChannelList) {
-                        Card(
+                        ChannelListSidebar(
+                            channels = channels,
+                            selectedChannelIndex = selectedChannelIndex,
+                            onChannelSelected = { index ->
+                                selectedChannelIndex = index
+                                showChannelList = false
+                            },
+                            listState = listState,
                             modifier = Modifier
                                 .width(400.dp)
                                 .fillMaxHeight()
-                                .padding(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Black.copy(alpha = 0.95f)
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Black.copy(alpha = 0.95f),
-                                                Color.DarkGray.copy(alpha = 0.95f)
-                                            )
-                                        )
-                                    )
-                                    .padding(20.dp)
-                            ) {
-                                Text(
-                                    text = " (${channels.size})",
-                                    color = Color.White,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-
-                                Text(
-                                    text = "Use ↑↓ to navigate, OK to select, ← to hide",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-
-                                LazyColumn(
-                                    state = listState,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    itemsIndexed(channels) { index, channel ->
-                                        ChannelListItemComposable(
-                                            channel = channel,
-                                            channelNumber = index + 1,
-                                            isSelected = index == selectedChannelIndex,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    selectedChannelIndex = index
-                                                    showChannelList = false
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                                .padding(12.dp)
+                        )
                     }
 
                     // Video Player
@@ -370,92 +359,32 @@ fun TVPlayerApp() {
                             )
                         }
 
-                        // Player Info Overlay - Top Right
-                        if (showPlayerInfoOverlay && !showChannelList) {
-                            Card(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color.Black.copy(alpha = 0.85f)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp)
-                                ) {
-                                    channels.getOrNull(selectedChannelIndex)?.let { channel ->
-                                        Text(
-                                            text = "${selectedChannelIndex + 1}/${channels.size}",
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = channel.name,
-                                            color = Color.White,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        if (channel.category.isNotEmpty()) {
-                                            Text(
-                                                text = channel.category,
-                                                color = Color.Gray,
-                                                fontSize = 12.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        // Volume Overlay - Top Right
+                        VolumeOverlay(
+                            show = showVolumeOverlay,
+                            currentVolume = currentVolume,
+                            maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                            isMuted = currentVolume == 0,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        )
+
+                        // Player Info Overlay - Bottom Center
+                        ChannelChangeOverlay(
+                            show = showPlayerInfoOverlay && !showChannelList,
+                            showChannelList = showChannelList,
+                            channels = channels,
+                            selectedChannelIndex = selectedChannelIndex,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
 
                         // Channel Change Overlay - Bottom Center
-                        if (showChannelChangeOverlay && !showChannelList) {
-                            Card(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color.Black.copy(alpha = 0.9f)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    channels.getOrNull(selectedChannelIndex)?.let { channel ->
-                                        AsyncImage(
-                                            model = channel.logo,
-                                            contentDescription = "Channel Logo",
-                                            modifier = Modifier
-                                                .size(56.dp)
-                                                .padding(end = 16.dp),
-                                            onError = {}
-                                        )
-                                        Column {
-                                            Text(
-                                                text = "${selectedChannelIndex + 1}. ${channel.name}",
-                                                color = Color.White,
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            if (channel.category.isNotEmpty()) {
-                                                Text(
-                                                    text = channel.category,
-                                                    color = Color.Gray,
-                                                    fontSize = 16.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        ChannelChangeOverlay(
+                            show = showChannelChangeOverlay,
+                            showChannelList = showChannelList,
+                            channels = channels,
+                            selectedChannelIndex = selectedChannelIndex,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
 
                         // Audio/Video Settings Overlay - Right Side
                         if (showSettingsOverlay && !showChannelList) {
@@ -554,7 +483,7 @@ fun TVPlayerApp() {
                                         }
                                     }
                                     Text(
-                                        text = "Use ↑↓ to navigate, OK to select, ← to hide",
+                                        text = "Use ↑↓ to navigate, OK to select, ← to hide, Vol+/- for volume",
                                         color = Color.Gray,
                                         fontSize = 12.sp
                                     )
@@ -562,92 +491,23 @@ fun TVPlayerApp() {
                             }
                         }
 
-                        // Controls Hint - Bottom Left
+                        // Controls Hint - Top Left
                         if (showControlsHint && !showChannelList && !showPlayerInfoOverlay && !showSettingsOverlay) {
-                            TvControlsHint(modifier = Modifier)
+                            TvControlsHint(modifier = Modifier.align(Alignment.TopEnd))
                         }
+
+                        // Show the ExitDialog
+                        ExitDialog(
+                            showExitDialog = showExitDialog,
+                            onDismiss = { showExitDialog = false }
+                        )
                     }
                 }
             }
         }
     }
 
-    // Exit Dialog - OUTSIDE the main UI
-    ExitDialog(
-        showExitDialog = showExitDialog,
-        onDismiss = { showExitDialog = false }
-    )
-
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
-    }
-}
-
-@Composable
-fun ChannelListItemComposable(
-    channel: ChannelItem,
-    channelNumber: Int,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-            } else {
-                Color.Gray.copy(alpha = 0.3f)
-            }
-        ),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 6.dp else 2.dp
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = channel.logo,
-                contentDescription = "Channel Logo",
-                modifier = Modifier
-                    .size(48.dp)
-                    .padding(end = 12.dp),
-                onError = {}
-            )
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "$channelNumber. ${channel.name}",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (channel.category.isNotEmpty()) {
-                    Text(
-                        text = channel.category,
-                        color = Color.LightGray,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            if (!channel.drmUrl.isNullOrEmpty()) {
-                Text(
-                    text = "🔒",
-                    color = Color.Yellow,
-                    fontSize = 16.sp
-                )
-            }
-        }
     }
 }

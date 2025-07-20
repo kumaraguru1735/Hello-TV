@@ -56,6 +56,14 @@ dependencies {
     implementation(libs.androidx.media3.datasource.rtmp)
     // https://mvnrepository.com/artifact/io.coil-kt.coil3/coil
     implementation(libs.coil.compose)
+
+    // material for tv
+    implementation(libs.androidx.tv.foundation)
+    implementation(libs.androidx.tv.material)
+
+    // icon
+    implementation(libs.androidx.material.icons.extended)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

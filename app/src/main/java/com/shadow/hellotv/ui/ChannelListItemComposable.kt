@@ -1,6 +1,5 @@
 package com.shadow.hellotv.ui
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,51 +22,48 @@ import coil.compose.AsyncImage
 import com.shadow.hellotv.model.ChannelItem
 
 @Composable
-fun ChannelItem(
+fun ChannelListItemComposable(
     channel: ChannelItem,
     channelNumber: Int,
     isSelected: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            ),
+        modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            else
-                Color.White.copy(alpha = 0.1f)
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            } else {
+                Color.Gray.copy(alpha = 0.3f)
+            }
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 6.dp else 2.dp
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = channel.logo,
                 contentDescription = "Channel Logo",
                 modifier = Modifier
-                    .size(40.dp)
-                    .padding(end = 12.dp)
+                    .size(48.dp)
+                    .padding(end = 12.dp),
+                onError = {}
             )
-            Column {
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     text = "$channelNumber. ${channel.name}",
                     color = Color.White,
-                    fontSize = if (isSelected) 18.sp else 16.sp,
+                    fontSize = 16.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -75,12 +71,20 @@ fun ChannelItem(
                 if (channel.category.isNotEmpty()) {
                     Text(
                         text = channel.category,
-                        color = if (isSelected) Color.White.copy(alpha = 0.8f) else Color.Gray,
-                        fontSize = 14.sp,
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+            }
+
+            if (!channel.drmUrl.isNullOrEmpty()) {
+                Text(
+                    text = "🔒",
+                    color = Color.Yellow,
+                    fontSize = 16.sp
+                )
             }
         }
     }

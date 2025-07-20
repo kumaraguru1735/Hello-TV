@@ -20,6 +20,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HelloTV">
 
+        <meta-data
+            android:name="com.google.android.exoplayer.drm.DrmSessionManager"
+            android:value="clearkey" />
+
 
         <!-- Main activity for mobile -->
         <activity
