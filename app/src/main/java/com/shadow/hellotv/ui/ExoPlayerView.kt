@@ -70,8 +70,13 @@ fun ExoPlayerView(
             }
         }
 
-        val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        val mediaSourceFactory = if (channel.url.startsWith("rtmp://", ignoreCase = true)) {
+            val rtmpFactory = androidx.media3.datasource.rtmp.RtmpDataSource.Factory()
+            DefaultMediaSourceFactory(rtmpFactory)
+        } else {
+            val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
+            DefaultMediaSourceFactory(dataSourceFactory)
+        }
 
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)

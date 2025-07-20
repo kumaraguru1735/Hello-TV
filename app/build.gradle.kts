@@ -45,17 +45,15 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.kotlinx.coroutines.android)
 // https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer
-    implementation("androidx.media3:media3-exoplayer:1.7.1")
-
+    implementation(libs.androidx.media3.exoplayer)
 // https://mvnrepository.com/artifact/androidx.media3/media3-ui
-    implementation("androidx.media3:media3-ui:1.7.1")
-
+    implementation(libs.androidx.media3.ui)
 // https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer-dash
-    implementation("androidx.media3:media3-exoplayer-dash:1.7.1")
-
-
+    implementation(libs.androidx.media3.exoplayer.dash)
 // https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer-hls
-    implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
+    implementation(libs.androidx.media3.exoplayer.hls)
+    // https://mvnrepository.com/artifact/androidx.media3/media3-datasource-rtmp
+    implementation(libs.androidx.media3.datasource.rtmp)
     // https://mvnrepository.com/artifact/io.coil-kt.coil3/coil
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)
