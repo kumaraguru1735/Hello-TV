@@ -20,11 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.shadow.hellotv.TVChannel
+import com.shadow.hellotv.model.ChannelItem
 
 @Composable
 fun ChannelItem(
-    channel: TVChannel,
+    channel: ChannelItem,
     channelNumber: Int,
     isSelected: Boolean,
     modifier: Modifier = Modifier
@@ -72,9 +72,9 @@ fun ChannelItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (channel.group.isNotEmpty()) {
+                if (channel.category.isNotEmpty()) {
                     Text(
-                        text = channel.group,
+                        text = channel.category,
                         color = if (isSelected) Color.White.copy(alpha = 0.8f) else Color.Gray,
                         fontSize = 14.sp,
                         maxLines = 1,

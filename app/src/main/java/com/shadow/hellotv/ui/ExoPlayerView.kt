@@ -9,33 +9,116 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
-import com.google.android.exoplayer2.ui.PlayerView
-import com.google.android.exoplayer2.util.MimeTypes
-import com.shadow.hellotv.TVChannel
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
+import com.shadow.hellotv.model.ChannelItem
 
+@UnstableApi
 @Composable
 fun ExoPlayerView(
-    channel: TVChannel,
+    channel: ChannelItem,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val exoPlayer = remember { ExoPlayer.Builder(context).build() }
+
+    val exoPlayer = remember {
+        // Create HTTP data source factory with custom headers
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
+            // Set User-Agent if provided
+            channel.userAgent?.let { userAgent ->
+                setUserAgent(userAgent)
+            }
+
+            // Set referer and additional headers
+            val headersMap = mutableMapOf<String, String>()
+
+            // Add referer if provided
+            channel.referer?.let { referer ->
+                headersMap["Referer"] = referer
+            }
+
+            // Parse and set additional headers from playerHeaders
+            if (!channel.playerHeaders.isNullOrEmpty()) {
+                try {
+                    val headers = channel.playerHeaders.split("\n")
+                        .associate { line ->
+                            val parts = line.split(":", limit = 2)
+                            if (parts.size == 2) {
+                                parts[0].trim() to parts[1].trim()
+                            } else {
+                                "" to ""
+                            }
+                        }
+                        .filterKeys { it.isNotEmpty() }
+
+                    headersMap.putAll(headers)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            if (headersMap.isNotEmpty()) {
+                setDefaultRequestProperties(headersMap)
+            }
+        }
+
+        val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build()
+    }
 
     val mediaItem = remember(channel) {
         val builder = MediaItem.Builder()
             .setUri(channel.url)
-            .setMimeType(MimeTypes.APPLICATION_MPD)
 
-        if (channel.licenseKey != null) {
-            builder.setDrmConfiguration(
-                MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
-                    .setLicenseUri(channel.licenseKey)
-                    .build()
-            )
+        // Determine MIME type based on URL
+        val mimeType = when {
+            channel.url.contains(".mpd") -> MimeTypes.APPLICATION_MPD
+            channel.url.contains(".m3u8") -> MimeTypes.APPLICATION_M3U8
+            else -> null
+        }
+
+        mimeType?.let { builder.setMimeType(it) }
+
+        // Set DRM configuration if DRM URL is provided
+        if (!channel.drmUrl.isNullOrEmpty()) {
+            try {
+                val drmBuilder = MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
+                    .setLicenseUri(channel.drmUrl)
+
+                // Add DRM headers if provided
+                if (!channel.drmHeaders.isNullOrEmpty()) {
+                    val drmHeadersMap = channel.drmHeaders.split("\n")
+                        .associate { line ->
+                            val parts = line.split(":", limit = 2)
+                            if (parts.size == 2) {
+                                parts[0].trim() to parts[1].trim()
+                            } else {
+                                "" to ""
+                            }
+                        }
+                        .filterKeys { it.isNotEmpty() }
+
+                    if (drmHeadersMap.isNotEmpty()) {
+                        drmBuilder.setLicenseRequestHeaders(drmHeadersMap)
+                    }
+                }
+
+                builder.setDrmConfiguration(drmBuilder.build())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         builder.build()

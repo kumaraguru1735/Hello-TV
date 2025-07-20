@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization) // Added for kotlinx.serialization
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -40,10 +41,21 @@ android {
 }
 
 dependencies {
+    implementation(libs.kotlinx.serialization.json) // or latest version
     implementation(libs.material3)
     implementation(libs.kotlinx.coroutines.android)
-// https://mvnrepository.com/artifact/com.google.android.exoplayer/exoplayer
-    implementation(libs.exoplayer)
+// https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer
+    implementation("androidx.media3:media3-exoplayer:1.7.1")
+
+// https://mvnrepository.com/artifact/androidx.media3/media3-ui
+    implementation("androidx.media3:media3-ui:1.7.1")
+
+// https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer-dash
+    implementation("androidx.media3:media3-exoplayer-dash:1.7.1")
+
+
+// https://mvnrepository.com/artifact/androidx.media3/media3-exoplayer-hls
+    implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
     // https://mvnrepository.com/artifact/io.coil-kt.coil3/coil
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)

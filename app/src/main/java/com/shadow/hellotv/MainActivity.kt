@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -30,7 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.shadow.hellotv.ui.ChannelItem
+import com.shadow.hellotv.model.ChannelItem
 import com.shadow.hellotv.ui.ErrorMessage
 import com.shadow.hellotv.ui.ExitDialog
 import com.shadow.hellotv.ui.ExoPlayerView
@@ -85,23 +83,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class TVChannel(
-    val id: String,
-    val name: String,
-    val logo: String,
-    val group: String,
-    val url: String,
-    val licenseKey: String? = null
-)
-
-const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/playlist.m3u"
+const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/playlist.json"
 const val MIN_DRAG_DISTANCE = 100f
-const val LEFT_DRAG_ZONE = 0.3f // Left 30% of screen
+const val LEFT_DRAG_ZONE = 0.3f
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TVPlayerApp() {
-    var channels by remember { mutableStateOf<List<TVChannel>>(emptyList()) }
+    var channels by remember { mutableStateOf<List<ChannelItem>>(emptyList()) }
     var selectedChannelIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var showChannelList by remember { mutableStateOf(false) }
@@ -110,7 +98,7 @@ fun TVPlayerApp() {
     var showChannelChangeOverlay by remember { mutableStateOf(false) }
     var showControlsHint by remember { mutableStateOf(true) }
     var showExitDialog by remember { mutableStateOf(false) }
-    var showSettingsOverlay by remember { mutableStateOf(false) } // New state for settings
+    var showSettingsOverlay by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
     var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
 
@@ -158,6 +146,7 @@ fun TVPlayerApp() {
             isLoading = true
             errorMessage = null
             channels = loadPlaylist(PLAYLIST_URL)
+            println(channels)
             if (channels.isEmpty()) {
                 errorMessage = "No channels found in playlist"
             }
@@ -185,7 +174,7 @@ fun TVPlayerApp() {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_DPAD_UP -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else if (channels.isNotEmpty()) {
                                 selectedChannelIndex = if (selectedChannelIndex > 0) {
                                     selectedChannelIndex - 1
@@ -197,7 +186,7 @@ fun TVPlayerApp() {
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else if (channels.isNotEmpty()) {
                                 selectedChannelIndex = if (selectedChannelIndex < channels.size - 1) {
                                     selectedChannelIndex + 1
@@ -209,7 +198,7 @@ fun TVPlayerApp() {
                         }
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else if (showChannelList || showSettingsOverlay) {
                                 showChannelList = false
                                 showSettingsOverlay = false
@@ -220,7 +209,7 @@ fun TVPlayerApp() {
                         }
                         KeyEvent.KEYCODE_BACK -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else if (showChannelList || showSettingsOverlay) {
                                 showChannelList = false
                                 showSettingsOverlay = false
@@ -232,7 +221,7 @@ fun TVPlayerApp() {
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else {
                                 showChannelList = !showChannelList
                                 if (showChannelList) {
@@ -243,7 +232,7 @@ fun TVPlayerApp() {
                         }
                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
                             if (showExitDialog) {
-                                false // Let exit dialog handle it
+                                false
                             } else if (!showChannelList) {
                                 showSettingsOverlay = !showSettingsOverlay
                                 if (showSettingsOverlay) {
@@ -299,7 +288,7 @@ fun TVPlayerApp() {
                                     .padding(20.dp)
                             ) {
                                 Text(
-                                    text = "Channels (${channels.size})",
+                                    text = " (${channels.size})",
                                     color = Color.White,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
@@ -318,7 +307,7 @@ fun TVPlayerApp() {
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     itemsIndexed(channels) { index, channel ->
-                                        ChannelItem(
+                                        ChannelListItemComposable(
                                             channel = channel,
                                             channelNumber = index + 1,
                                             isSelected = index == selectedChannelIndex,
@@ -410,9 +399,9 @@ fun TVPlayerApp() {
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        if (channel.group.isNotEmpty()) {
+                                        if (channel.category.isNotEmpty()) {
                                             Text(
-                                                text = channel.group,
+                                                text = channel.category,
                                                 color = Color.Gray,
                                                 fontSize = 12.sp,
                                                 maxLines = 1,
@@ -455,9 +444,9 @@ fun TVPlayerApp() {
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
-                                            if (channel.group.isNotEmpty()) {
+                                            if (channel.category.isNotEmpty()) {
                                                 Text(
-                                                    text = channel.group,
+                                                    text = channel.category,
                                                     color = Color.Gray,
                                                     fontSize = 16.sp
                                                 )
@@ -493,6 +482,23 @@ fun TVPlayerApp() {
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+
+                                    channels.getOrNull(selectedChannelIndex)?.let { channel ->
+                                        Text(
+                                            text = "Current Channel: ${channel.name}",
+                                            color = Color.Gray,
+                                            fontSize = 14.sp
+                                        )
+
+                                        if (!channel.drmUrl.isNullOrEmpty()) {
+                                            Text(
+                                                text = "DRM Protected Content",
+                                                color = Color.Yellow,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+
                                     Text(
                                         text = "Audio Track",
                                         color = Color.White,
@@ -508,7 +514,7 @@ fun TVPlayerApp() {
                                             ),
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
-                                            Text("Track 1", color = Color.White, fontSize = 14.sp)
+                                            Text("Auto", color = Color.White, fontSize = 14.sp)
                                         }
                                         Button(
                                             onClick = { /* TODO: Switch audio track */ },
@@ -517,7 +523,7 @@ fun TVPlayerApp() {
                                             ),
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
-                                            Text("Track 2", color = Color.White, fontSize = 14.sp)
+                                            Text("Track 1", color = Color.White, fontSize = 14.sp)
                                         }
                                     }
                                     Text(
@@ -574,5 +580,74 @@ fun TVPlayerApp() {
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+}
+
+@Composable
+fun ChannelListItemComposable(
+    channel: ChannelItem,
+    channelNumber: Int,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            } else {
+                Color.Gray.copy(alpha = 0.3f)
+            }
+        ),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 6.dp else 2.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = channel.logo,
+                contentDescription = "Channel Logo",
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(end = 12.dp),
+                onError = {}
+            )
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "$channelNumber. ${channel.name}",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (channel.category.isNotEmpty()) {
+                    Text(
+                        text = channel.category,
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            if (!channel.drmUrl.isNullOrEmpty()) {
+                Text(
+                    text = "🔒",
+                    color = Color.Yellow,
+                    fontSize = 16.sp
+                )
+            }
+        }
     }
 }

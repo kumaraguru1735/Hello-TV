@@ -18,7 +18,7 @@ data class ChannelItem(
     val category: String,
     val url: String,
     @SerialName("player_headers")
-    val playerHeaders: String,
+    val playerHeaders: String? = null,
     @SerialName("drm_url")
     val drmUrl: String? = null,
     @SerialName("drm_headers")
