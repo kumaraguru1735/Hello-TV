@@ -20,6 +20,10 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.shadow.hellotv.model.ChannelItem
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 @UnstableApi
 @Composable
@@ -32,36 +36,53 @@ fun ExoPlayerView(
     val exoPlayer = remember {
         // Create HTTP data source factory with custom headers
         val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
-            // Set User-Agent if provided
-            channel.userAgent?.let { userAgent ->
-                setUserAgent(userAgent)
-            }
-
-            // Set referer and additional headers
             val headersMap = mutableMapOf<String, String>()
+
+            // Parse userAgent (JsonElement → String)
+            channel.userAgent?.let { element ->
+                when {
+                    element is JsonPrimitive && element.isString -> {
+                        setUserAgent(element.content)
+                    }
+                    element is JsonObject -> {
+                        // You can also include User-Agent inside this object if you prefer
+                        element["User-Agent"]?.jsonPrimitive?.contentOrNull?.let { ua ->
+                            setUserAgent(ua)
+                        }
+                        // Add all other entries as headers
+                        element.forEach { (key, value) ->
+                            headersMap[key] = value.jsonPrimitive.content
+                        }
+                    }
+                }
+            }
 
             // Add referer if provided
             channel.referer?.let { referer ->
                 headersMap["Referer"] = referer
             }
 
-            // Parse and set additional headers from playerHeaders
-            if (!channel.playerHeaders.isNullOrEmpty()) {
-                try {
-                    val headers = channel.playerHeaders.split("\n")
-                        .associate { line ->
-                            val parts = line.split(":", limit = 2)
-                            if (parts.size == 2) {
-                                parts[0].trim() to parts[1].trim()
-                            } else {
-                                "" to ""
-                            }
-                        }
-                        .filterKeys { it.isNotEmpty() }
+            // Parse playerHeaders (JsonElement → Map)
+            channel.playerHeaders?.let { element ->
+                when (element) {
+                    is JsonPrimitive -> {
+                        // handle if it's a string like "Header: Value\nAnother: Header"
+                        val headers = element.content.split("\n")
+                            .mapNotNull { line ->
+                                val parts = line.split(":", limit = 2)
+                                if (parts.size == 2) parts[0].trim() to parts[1].trim() else null
+                            }.toMap()
+                        headersMap.putAll(headers)
+                    }
 
-                    headersMap.putAll(headers)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    is JsonObject -> {
+                        // handle JSON object headers
+                        element.forEach { (key, value) ->
+                            headersMap[key] = value.jsonPrimitive.content
+                        }
+                    }
+
+                    else -> Unit
                 }
             }
 
@@ -87,7 +108,6 @@ fun ExoPlayerView(
         val builder = MediaItem.Builder()
             .setUri(channel.url)
 
-        // Determine MIME type based on URL
         val mimeType = when {
             channel.url.contains(".mpd") -> MimeTypes.APPLICATION_MPD
             channel.url.contains(".m3u8") -> MimeTypes.APPLICATION_M3U8
@@ -96,24 +116,23 @@ fun ExoPlayerView(
 
         mimeType?.let { builder.setMimeType(it) }
 
-        // Set DRM configuration if DRM URL is provided
         if (!channel.drmUrl.isNullOrEmpty()) {
             try {
                 val drmBuilder = MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
                     .setLicenseUri(channel.drmUrl)
 
-                // Add DRM headers if provided
-                if (!channel.drmHeaders.isNullOrEmpty()) {
-                    val drmHeadersMap = channel.drmHeaders.split("\n")
-                        .associate { line ->
+                // DRM Headers (JsonElement → Map)
+                channel.drmHeaders?.let { element ->
+                    val drmHeadersMap = when (element) {
+                        is JsonPrimitive -> element.content.split("\n").mapNotNull { line ->
                             val parts = line.split(":", limit = 2)
-                            if (parts.size == 2) {
-                                parts[0].trim() to parts[1].trim()
-                            } else {
-                                "" to ""
-                            }
-                        }
-                        .filterKeys { it.isNotEmpty() }
+                            if (parts.size == 2) parts[0].trim() to parts[1].trim() else null
+                        }.toMap()
+
+                        is JsonObject -> element.mapValues { it.value.jsonPrimitive.content }
+
+                        else -> emptyMap()
+                    }
 
                     if (drmHeadersMap.isNotEmpty()) {
                         drmBuilder.setLicenseRequestHeaders(drmHeadersMap)

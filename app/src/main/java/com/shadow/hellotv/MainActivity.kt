@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/playlist.json"
+const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/jiostar.json"
 const val MIN_DRAG_DISTANCE = 100f
 const val LEFT_DRAG_ZONE = 0.3f
 
