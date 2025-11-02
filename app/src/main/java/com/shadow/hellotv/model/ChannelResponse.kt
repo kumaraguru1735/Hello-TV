@@ -24,8 +24,13 @@ data class ChannelItem(
     val drmUrl: String? = null,
     @SerialName("drm_headers")
     val drmHeaders: JsonElement? = null,     // optional same flexibility
-    val cookie: String? = null,
-    @SerialName("user_agent")
-    val userAgent: JsonElement? = null,      // ← can be string or object
-    val referer: String? = null,
+    @SerialName("drm_type")
+    val drmType: DRMType? = null,
 )
+
+enum class DRMType{
+    CLEARKEY,
+    WIDEVINE,
+    PLAYREADY,
+    FAIRPLAY
+}
