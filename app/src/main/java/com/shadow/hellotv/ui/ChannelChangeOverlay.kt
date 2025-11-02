@@ -1,9 +1,13 @@
 package com.shadow.hellotv.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -12,23 +16,30 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -51,235 +62,165 @@ fun ChannelChangeOverlay(
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
-
-    // Responsive sizing based on screen type
-    val isTablet = screenWidth >= 600.dp
     val isTV = screenWidth >= 1000.dp
-    val isMobile = screenWidth < 600.dp
-
-    val logoSize = when {
-        isTV -> 56.dp
-        isTablet -> 48.dp
-        else -> 40.dp
-    }
-
-    val fontSize = when {
-        isTV -> 20.sp
-        isTablet -> 18.sp
-        else -> 16.sp
-    }
-
-    val categoryFontSize = when {
-        isTV -> 14.sp
-        isTablet -> 12.sp
-        else -> 11.sp
-    }
-
-    val containerPadding = when {
-        isTV -> 24.dp
-        isTablet -> 20.dp
-        else -> 16.dp
-    }
-
-    val bottomPadding = when {
-        isTV -> 32.dp
-        isTablet -> 24.dp
-        else -> 16.dp
-    }
+    val isTablet = screenWidth >= 600.dp
 
     AnimatedVisibility(
         visible = show && !showChannelList,
-        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-            initialOffsetY = { it },
-            animationSpec = tween(300)
-        ),
-        exit = fadeOut(animationSpec = tween(200)) + slideOutVertically(
-            targetOffsetY = { it },
-            animationSpec = tween(200)
-        )
+        enter = fadeIn(animationSpec = tween(400)) +
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) +
+                scaleIn(
+                    initialScale = 0.8f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
+        exit = fadeOut(animationSpec = tween(300)) +
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                ) +
+                scaleOut(
+                    targetScale = 0.8f,
+                    animationSpec = tween(300)
+                )
     ) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(
-                        max = when {
-                            isTV -> 500.dp
-                            isTablet -> 400.dp
-                            else -> screenWidth * 0.9f
-                        }
-                    )
-                    .padding(
-                        start = when {
-                            isTV -> 48.dp
-                            isTablet -> 32.dp
-                            else -> 16.dp
-                        },
-                        end = when {
-                            isTV -> 48.dp
-                            isTablet -> 32.dp
-                            else -> 16.dp
-                        },
-                        bottom = bottomPadding
-                    ),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                ),
-                shape = RoundedCornerShape(
-                    when {
-                        isTV -> 16.dp
-                        isTablet -> 14.dp
-                        else -> 12.dp
-                    }
-                )
-            ) {
-                Box(
+            channels.getOrNull(selectedChannelIndex)?.let { channel ->
+                // Glass morphism card
+                Card(
                     modifier = Modifier
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.92f),
-                                    Color.Black.copy(alpha = 0.96f)
+                        .widthIn(max = if (isTV) 600.dp else if (isTablet) 500.dp else screenWidth * 0.92f)
+                        .padding(
+                            start = if (isTV) 48.dp else if (isTablet) 32.dp else 16.dp,
+                            end = if (isTV) 48.dp else if (isTablet) 32.dp else 16.dp,
+                            bottom = if (isTV) 48.dp else if (isTablet) 36.dp else 24.dp
+                        )
+                        .shadow(
+                            elevation = 24.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            spotColor = Color(0xFF6366F1).copy(alpha = 0.3f)
+                        ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF1E1E2E).copy(alpha = 0.95f),
+                                        Color(0xFF2A2A3E).copy(alpha = 0.95f)
+                                    )
                                 )
                             )
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(
-                                when {
-                                    isTV -> 16.dp
-                                    isTablet -> 14.dp
-                                    else -> 12.dp
-                                }
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF6366F1).copy(alpha = 0.5f),
+                                        Color(0xFF8B5CF6).copy(alpha = 0.5f),
+                                        Color(0xFFEC4899).copy(alpha = 0.5f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(24.dp)
                             )
-                        )
-                        .padding(containerPadding)
-                ) {
-                    channels.getOrNull(selectedChannelIndex)?.let { channel ->
-                        if (isMobile) {
-                            // Mobile Layout - Compact horizontal
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(if (isTV) 28.dp else if (isTablet) 24.dp else 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(if (isTV) 24.dp else 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Channel number badge with gradient
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isTV) 72.dp else if (isTablet) 64.dp else 56.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                Color(0xFF6366F1),
+                                                Color(0xFF8B5CF6)
+                                            )
+                                        )
+                                    )
+                                    .border(
+                                        width = 2.dp,
+                                        color = Color.White.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // Channel Number Badge
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.2f)),
-                                    contentAlignment = Alignment.Center
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
                                         text = "${selectedChannelIndex + 1}",
                                         color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontSize = if (isTV) 24.sp else if (isTablet) 22.sp else 20.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp
                                     )
-                                }
-
-                                // Logo
-                                Box(
-                                    modifier = Modifier
-                                        .size(logoSize)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.1f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    AsyncImage(
-                                        model = channel.logo,
-                                        contentDescription = "Channel Logo",
-                                        modifier = Modifier
-                                            .size(logoSize - 8.dp)
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop,
-                                        onError = {}
-                                    )
-
-                                    if (channel.logo.isEmpty()) {
-                                        Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = "TV Icon",
-                                            tint = Color.White.copy(alpha = 0.7f),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-
-                                // Channel Info - Flexible width
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
                                     Text(
-                                        text = channel.name,
-                                        color = Color.White,
-                                        fontSize = fontSize,
+                                        text = "CH",
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = if (isTV) 10.sp else 9.sp,
                                         fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        letterSpacing = 1.sp
                                     )
-
-                                    if (channel.category.isNotEmpty()) {
-                                        Text(
-                                            text = channel.category,
-                                            color = Color.White.copy(alpha = 0.7f),
-                                            fontSize = categoryFontSize,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
                                 }
                             }
-                        } else {
-                            // Tablet & TV Layout - More spacious
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier.fillMaxWidth()
+
+                            // Channel logo with glow effect
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // Channel Number Badge
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = Color.White.copy(alpha = 0.15f)
-                                    ),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text(
-                                        text = "${selectedChannelIndex + 1}",
-                                        color = Color.White,
-                                        fontSize = when {
-                                            isTV -> 16.sp
-                                            else -> 14.sp
-                                        },
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(
-                                            horizontal = when {
-                                                isTV -> 16.dp
-                                                else -> 12.dp
-                                            },
-                                            vertical = when {
-                                                isTV -> 8.dp
-                                                else -> 6.dp
-                                            }
+                                // Glow background
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isTV) 88.dp else if (isTablet) 78.dp else 72.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            brush = Brush.radialGradient(
+                                                colors = listOf(
+                                                    Color(0xFF6366F1).copy(alpha = 0.3f),
+                                                    Color.Transparent
+                                                )
+                                            )
                                         )
-                                    )
-                                }
+                                )
 
                                 // Logo
                                 Box(
                                     modifier = Modifier
-                                        .size(logoSize + 8.dp)
+                                        .size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp)
                                         .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.1f))
+                                        .background(Color(0xFF2A2A3E))
                                         .border(
-                                            width = 1.5.dp,
-                                            color = Color.White.copy(alpha = 0.2f),
+                                            width = 2.dp,
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color(0xFF6366F1).copy(alpha = 0.5f),
+                                                    Color(0xFF8B5CF6).copy(alpha = 0.5f)
+                                                )
+                                            ),
                                             shape = CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -288,53 +229,159 @@ fun ChannelChangeOverlay(
                                         model = channel.logo,
                                         contentDescription = "Channel Logo",
                                         modifier = Modifier
-                                            .size(logoSize)
+                                            .size(if (isTV) 72.dp else if (isTablet) 62.dp else 56.dp)
                                             .clip(CircleShape),
-                                        contentScale = ContentScale.Crop,
-                                        onError = {}
+                                        contentScale = ContentScale.Crop
                                     )
 
                                     if (channel.logo.isEmpty()) {
                                         Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = "TV Icon",
-                                            tint = Color.White.copy(alpha = 0.7f),
-                                            modifier = Modifier.size(
-                                                when {
-                                                    isTV -> 24.dp
-                                                    else -> 20.dp
-                                                }
-                                            )
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color.White.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(if (isTV) 32.dp else 28.dp)
                                         )
                                     }
                                 }
+                            }
 
-                                // Channel Info
-                                Column(
-                                    modifier = Modifier.weight(1f)
+                            // Channel info
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(if (isTV) 8.dp else 6.dp)
+                            ) {
+                                // Channel name with gradient text effect (simulated)
+                                Text(
+                                    text = channel.name,
+                                    color = Color.White,
+                                    fontSize = if (isTV) 26.sp else if (isTablet) 22.sp else 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = if (isTV) 32.sp else if (isTablet) 28.sp else 26.sp
+                                )
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = channel.name,
-                                        color = Color.White,
-                                        fontSize = fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = if (isTV) 2 else 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Start
-                                    )
-
+                                    // Category badge
                                     if (channel.category.isNotEmpty()) {
-                                        Text(
-                                            text = channel.category.uppercase(),
-                                            color = Color.White.copy(alpha = 0.7f),
-                                            fontSize = categoryFontSize,
-                                            fontWeight = FontWeight.Medium,
-                                            letterSpacing = 0.5.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    brush = Brush.horizontalGradient(
+                                                        colors = listOf(
+                                                            Color(0xFF8B5CF6).copy(alpha = 0.3f),
+                                                            Color(0xFFEC4899).copy(alpha = 0.3f)
+                                                        )
+                                                    )
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFF8B5CF6).copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .padding(
+                                                    horizontal = if (isTV) 14.dp else 12.dp,
+                                                    vertical = if (isTV) 6.dp else 5.dp
+                                                )
+                                        ) {
+                                            Text(
+                                                text = channel.category.uppercase(),
+                                                color = Color.White.copy(alpha = 0.9f),
+                                                fontSize = if (isTV) 13.sp else if (isTablet) 12.sp else 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 1.sp
+                                            )
+                                        }
+                                    }
+
+                                    // DRM badge
+                                    if (!channel.drmUrl.isNullOrEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color(0xFFFBBF24).copy(alpha = 0.2f))
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFFFBBF24).copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .padding(
+                                                    horizontal = if (isTV) 12.dp else 10.dp,
+                                                    vertical = if (isTV) 6.dp else 5.dp
+                                                )
+                                        ) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Lock,
+                                                    contentDescription = "DRM",
+                                                    tint = Color(0xFFFBBF24),
+                                                    modifier = Modifier.size(if (isTV) 14.dp else 12.dp)
+                                                )
+                                                Text(
+                                                    text = "DRM",
+                                                    color = Color(0xFFFBBF24),
+                                                    fontSize = if (isTV) 11.sp else 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    letterSpacing = 0.5.sp
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Live badge
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFEF4444).copy(alpha = 0.2f))
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFEF4444).copy(alpha = 0.5f),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(
+                                                horizontal = if (isTV) 12.dp else 10.dp,
+                                                vertical = if (isTV) 6.dp else 5.dp
+                                            )
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(if (isTV) 8.dp else 7.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFFEF4444))
+                                            )
+                                            Text(
+                                                text = "LIVE",
+                                                color = Color(0xFFEF4444),
+                                                fontSize = if (isTV) 11.sp else 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                        }
                                     }
                                 }
+
+                                // Progress indicator (decorative)
+                                Spacer(modifier = Modifier.height(if (isTV) 4.dp else 2.dp))
+                                LinearProgressIndicator(
+                                    progress = 0.7f,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(if (isTV) 4.dp else 3.dp)
+                                        .clip(RoundedCornerShape(2.dp)),
+                                    color = Color(0xFF6366F1),
+                                    trackColor = Color.White.copy(alpha = 0.1f)
+                                )
                             }
                         }
                     }
