@@ -11,9 +11,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,11 +49,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.util.UnstableApi
 import com.shadow.hellotv.model.ChannelItem
 import com.shadow.hellotv.ui.ChannelChangeOverlay
 import com.shadow.hellotv.ui.ChannelListSidebar
-import com.shadow.hellotv.ui.ErrorMessage
 import com.shadow.hellotv.ui.ExitDialog
 import com.shadow.hellotv.ui.ExoPlayerView
 import com.shadow.hellotv.ui.TvControlsHint
@@ -61,7 +63,6 @@ import com.shadow.hellotv.ui.VolumeOverlay
 import com.shadow.hellotv.ui.theme.HelloTVTheme
 import com.shadow.hellotv.ui.theme.IntroUi
 import com.shadow.hellotv.utils.KeepScreenOn
-import com.shadow.hellotv.utils.calculateDistance
 import com.shadow.hellotv.utils.loadPlaylist
 import kotlin.math.abs
 import kotlinx.coroutines.delay
@@ -69,16 +70,35 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Set black background before ANYTHING else - this prevents white flash
+        window.decorView.setBackgroundColor(android.graphics.Color.BLACK)
+        window.setBackgroundDrawableResource(android.R.color.black)
+
+        // Full screen setup
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
+
+        // Hide system bars immediately
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         enableEdgeToEdge()
+
         setContent {
             HelloTVTheme {
                 KeepScreenOn()
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                ) {
                     TVPlayerApp()
                 }
             }
@@ -89,6 +109,8 @@ class MainActivity : ComponentActivity() {
 const val PLAYLIST_URL = "https://livetv.ipcloud.live/channels/jiostar.json"
 const val MIN_DRAG_DISTANCE = 100f
 const val LEFT_DRAG_ZONE = 0.3f
+const val SWIPE_THRESHOLD = 150f
+const val AUTO_RETRY_DELAY = 5000L // Auto retry every 5 seconds on error
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -99,8 +121,10 @@ fun TVPlayerApp() {
     var channels by remember { mutableStateOf<List<ChannelItem>>(emptyList()) }
     var selectedChannelIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
-    var showChannelList by remember { mutableStateOf(false) }
+    var loadingMessage by remember { mutableStateOf("Initializing...") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var retryTrigger by remember { mutableIntStateOf(0) } // Changed to Int for trigger
+    var showChannelList by remember { mutableStateOf(false) }
     var showPlayerInfoOverlay by remember { mutableStateOf(false) }
     var showChannelChangeOverlay by remember { mutableStateOf(false) }
     var showControlsHint by remember { mutableStateOf(true) }
@@ -156,20 +180,50 @@ fun TVPlayerApp() {
         }
     }
 
-    // Load playlist
-    LaunchedEffect(Unit) {
-        try {
-            isLoading = true
-            errorMessage = null
-            channels = loadPlaylist(PLAYLIST_URL)
-            if (channels.isEmpty()) {
-                errorMessage = "No channels found in playlist"
+    // Load playlist with automatic retry on error
+    LaunchedEffect(retryTrigger) {
+        while (channels.isEmpty()) {
+            try {
+                isLoading = true
+                errorMessage = null
+
+                loadingMessage = "Connecting to server..."
+                delay(500)
+
+                loadingMessage = "Loading channels..."
+                channels = loadPlaylist(PLAYLIST_URL)
+
+                if (channels.isEmpty()) {
+                    errorMessage = "No channels available"
+                    loadingMessage = "Unable to load channels"
+                    delay(AUTO_RETRY_DELAY)
+                    loadingMessage = "Retrying..."
+                    continue // Retry loop
+                } else {
+                    loadingMessage = "Loading complete!"
+                    delay(500)
+                    isLoading = false
+                    break // Success, exit loop
+                }
+            } catch (e: Exception) {
+                errorMessage = when {
+                    e.message?.contains("Unable to resolve host") == true ->
+                        "No internet connection"
+                    e.message?.contains("timeout") == true ->
+                        "Connection timeout"
+                    e.message?.contains("404") == true ->
+                        "Playlist not found"
+                    else ->
+                        "Unable to load data"
+                }
+                loadingMessage = errorMessage ?: "Error occurred"
+                e.printStackTrace()
+
+                // Auto retry after delay
+                delay(AUTO_RETRY_DELAY)
+                loadingMessage = "Retrying..."
+                // Loop continues to retry
             }
-        } catch (e: Exception) {
-            errorMessage = "Failed to load playlist: ${e.message}"
-            e.printStackTrace()
-        } finally {
-            isLoading = false
         }
     }
 
@@ -183,6 +237,7 @@ fun TVPlayerApp() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black)
             .onKeyEvent { keyEvent ->
                 if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
@@ -208,7 +263,7 @@ fun TVPlayerApp() {
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP -> {
-                            if (showExitDialog) {
+                            if (showExitDialog || errorMessage != null) {
                                 false
                             } else if (channels.isNotEmpty()) {
                                 selectedChannelIndex = if (selectedChannelIndex > 0) {
@@ -220,7 +275,7 @@ fun TVPlayerApp() {
                             } else false
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            if (showExitDialog) {
+                            if (showExitDialog || errorMessage != null) {
                                 false
                             } else if (channels.isNotEmpty()) {
                                 selectedChannelIndex = if (selectedChannelIndex < channels.size - 1) {
@@ -249,6 +304,10 @@ fun TVPlayerApp() {
                                 showChannelList = false
                                 showSettingsOverlay = false
                                 true
+                            } else if (errorMessage != null) {
+                                // Manual retry on back press when error
+                                retryTrigger++
+                                true
                             } else {
                                 showExitDialog = true
                                 true
@@ -257,6 +316,10 @@ fun TVPlayerApp() {
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                             if (showExitDialog) {
                                 false
+                            } else if (errorMessage != null) {
+                                // Manual retry on enter/ok when error
+                                retryTrigger++
+                                true
                             } else {
                                 showChannelList = !showChannelList
                                 if (showChannelList) {
@@ -286,15 +349,19 @@ fun TVPlayerApp() {
             .focusable()
     ) {
         when {
-            isLoading -> {
-                IntroUi()
+            channels.isEmpty() -> {
+                // Show IntroUI for both loading and error states
+                IntroUi(
+                    isLoading = isLoading,
+                    message = loadingMessage,
+                    errorMessage = errorMessage,
+                    onRetry = {
+                        retryTrigger++
+                    }
+                )
             }
 
-            errorMessage != null -> {
-                ErrorMessage(errorMessage!!)
-            }
-
-            channels.isNotEmpty() -> {
+            else -> {
                 Row(modifier = Modifier.fillMaxSize()) {
                     // Channel List Sidebar
                     if (showChannelList) {
@@ -321,6 +388,21 @@ fun TVPlayerApp() {
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onTap = { offset ->
+                                                if (offset.x < size.width * 0.3f) {
+                                                    showChannelList = !showChannelList
+                                                } else {
+                                                    showPlayerInfoOverlay = true
+                                                    showControlsHint = true
+                                                }
+                                            },
+                                            onDoubleTap = {
+                                                showChannelList = !showChannelList
+                                            }
+                                        )
+                                    }
+                                    .pointerInput(Unit) {
                                         detectDragGestures(
                                             onDragStart = { offset ->
                                                 isDragging = true
@@ -330,36 +412,37 @@ fun TVPlayerApp() {
                                                 isDragging = false
                                             }
                                         ) { change, _ ->
-                                            val dragDistance = calculateDistance(dragStartPosition, change.position)
-                                            if (dragDistance > MIN_DRAG_DISTANCE) {
-                                                val deltaY = change.position.y - dragStartPosition.y
-                                                if (abs(deltaY) > abs(change.position.x - dragStartPosition.x)) {
-                                                    if (deltaY > 0) {
-                                                        selectedChannelIndex = if (selectedChannelIndex > 0) {
-                                                            selectedChannelIndex - 1
-                                                        } else {
-                                                            channels.size - 1
-                                                        }
+                                            val deltaY = change.position.y - dragStartPosition.y
+                                            val deltaX = change.position.x - dragStartPosition.x
+
+                                            if (abs(deltaY) > SWIPE_THRESHOLD && abs(deltaY) > abs(deltaX)) {
+                                                if (deltaY > 0) {
+                                                    selectedChannelIndex = if (selectedChannelIndex > 0) {
+                                                        selectedChannelIndex - 1
                                                     } else {
-                                                        selectedChannelIndex = if (selectedChannelIndex < channels.size - 1) {
-                                                            selectedChannelIndex + 1
-                                                        } else {
-                                                            0
-                                                        }
+                                                        channels.size - 1
                                                     }
-                                                    dragStartPosition = change.position
+                                                } else {
+                                                    selectedChannelIndex = if (selectedChannelIndex < channels.size - 1) {
+                                                        selectedChannelIndex + 1
+                                                    } else {
+                                                        0
+                                                    }
                                                 }
+                                                dragStartPosition = change.position
+                                            }
+
+                                            if (dragStartPosition.x < size.width * LEFT_DRAG_ZONE &&
+                                                deltaX > SWIPE_THRESHOLD &&
+                                                abs(deltaX) > abs(deltaY)) {
+                                                showChannelList = true
+                                                isDragging = false
                                             }
                                         }
-                                    }
-                                    .clickable {
-                                        showPlayerInfoOverlay = true
-                                        showControlsHint = true
                                     }
                             )
                         }
 
-                        // Volume Overlay - Top Right
                         VolumeOverlay(
                             show = showVolumeOverlay,
                             currentVolume = currentVolume,
@@ -368,7 +451,6 @@ fun TVPlayerApp() {
                             modifier = Modifier.align(Alignment.TopEnd)
                         )
 
-                        // Player Info Overlay - Bottom Center
                         ChannelChangeOverlay(
                             show = showPlayerInfoOverlay && !showChannelList,
                             showChannelList = showChannelList,
@@ -377,7 +459,6 @@ fun TVPlayerApp() {
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
 
-                        // Channel Change Overlay - Bottom Center
                         ChannelChangeOverlay(
                             show = showChannelChangeOverlay,
                             showChannelList = showChannelList,
@@ -386,7 +467,6 @@ fun TVPlayerApp() {
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
 
-                        // Audio/Video Settings Overlay - Right Side
                         if (showSettingsOverlay && !showChannelList) {
                             Card(
                                 modifier = Modifier
@@ -437,7 +517,7 @@ fun TVPlayerApp() {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Button(
-                                            onClick = { /* TODO: Switch audio track */ },
+                                            onClick = { },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color.Gray.copy(alpha = 0.8f)
                                             ),
@@ -446,7 +526,7 @@ fun TVPlayerApp() {
                                             Text("Auto", color = Color.White, fontSize = 14.sp)
                                         }
                                         Button(
-                                            onClick = { /* TODO: Switch audio track */ },
+                                            onClick = { },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color.Gray.copy(alpha = 0.8f)
                                             ),
@@ -464,7 +544,7 @@ fun TVPlayerApp() {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Button(
-                                            onClick = { /* TODO: Switch video quality */ },
+                                            onClick = { },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color.Gray.copy(alpha = 0.8f)
                                             ),
@@ -473,7 +553,7 @@ fun TVPlayerApp() {
                                             Text("Auto", color = Color.White, fontSize = 14.sp)
                                         }
                                         Button(
-                                            onClick = { /* TODO: Switch video quality */ },
+                                            onClick = { },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color.Gray.copy(alpha = 0.8f)
                                             ),
@@ -491,12 +571,10 @@ fun TVPlayerApp() {
                             }
                         }
 
-                        // Controls Hint - Top Left
                         if (showControlsHint && !showChannelList && !showPlayerInfoOverlay && !showSettingsOverlay) {
                             TvControlsHint(modifier = Modifier.align(Alignment.TopEnd))
                         }
 
-                        // Show the ExitDialog
                         ExitDialog(
                             showExitDialog = showExitDialog,
                             onDismiss = { showExitDialog = false }
