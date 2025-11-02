@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -136,6 +137,11 @@ private fun ExitDialogContent(
                 .align(Alignment.Center)
                 .padding(24.dp)
                 .width(480.dp)
+                .shadow(
+                    elevation = 32.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = Color(0xFFEC4899).copy(alpha = 0.4f)
+                )
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -143,125 +149,166 @@ private fun ExitDialogContent(
                     // Prevent clicks on card from closing dialog
                 },
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1C1C1E)
+                containerColor = Color.Transparent
             ),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 32.dp)
+            shape = RoundedCornerShape(28.dp)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Icon with gradient background
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFFFF6B6B),
-                                    Color(0xFFFF4757)
-                                )
-                            ),
-                            shape = CircleShape
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF1E1E2E),
+                                Color(0xFF2A2A3E)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFEC4899).copy(alpha = 0.5f),
+                                Color(0xFFEF4444).copy(alpha = 0.5f)
+                            )
                         ),
-                    contentAlignment = Alignment.Center
+                        shape = RoundedCornerShape(28.dp)
+                    )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(36.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Exit Warning",
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
+                    // Icon with gradient background
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFFEC4899).copy(alpha = 0.3f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(88.dp)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFFEC4899).copy(alpha = 0.3f),
+                                            Color(0xFFEF4444).copy(alpha = 0.3f)
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                )
+                                .border(
+                                    width = 2.dp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFFEC4899).copy(alpha = 0.6f),
+                                            Color(0xFFEF4444).copy(alpha = 0.6f)
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Exit Warning",
+                                tint = Color(0xFFEC4899),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // Title
+                    Text(
+                        text = "Exit Application?",
+                        color = Color.White,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 0.5.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Description
+                    Text(
+                        text = "Are you sure you want to close the app?\nAll progress will be saved.",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(36.dp))
+
+                    // Buttons row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Cancel Button (Primary)
+                        DialogButton(
+                            text = "Cancel",
+                            isFocused = cancelButtonFocused,
+                            isPrimary = true,
+                            focusRequester = cancelFocusRequester,
+                            onFocusChanged = { cancelButtonFocused = it },
+                            onClick = onCancel,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Exit Button (Danger)
+                        DialogButton(
+                            text = "Exit",
+                            isFocused = exitButtonFocused,
+                            isPrimary = false,
+                            isDanger = true,
+                            focusRequester = exitFocusRequester,
+                            onFocusChanged = { exitButtonFocused = it },
+                            onClick = {
+                                try {
+                                    (context as? ComponentActivity)?.let { activity ->
+                                        activity.finishAndRemoveTask()
+                                        return@DialogButton
+                                    }
+
+                                    (context as? Activity)?.let { activity ->
+                                        activity.finishAndRemoveTask()
+                                        return@DialogButton
+                                    }
+
+                                    exitProcess(0)
+                                } catch (e: Exception) {
+                                    exitProcess(0)
+                                } finally {
+                                    onExit()
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Instructions
+                    Text(
+                        text = "Use ← → to navigate • OK to select",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 0.5.sp
                     )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Title
-                Text(
-                    text = "Exit Application?",
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Description
-                Text(
-                    text = "Are you sure you want to close the app?\nAll progress will be saved.",
-                    color = Color(0xFFB0B0B0),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Buttons row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Cancel Button (Primary)
-                    DialogButton(
-                        text = "Cancel",
-                        isFocused = cancelButtonFocused,
-                        isPrimary = true,
-                        focusRequester = cancelFocusRequester,
-                        onFocusChanged = { cancelButtonFocused = it },
-                        onClick = onCancel,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Exit Button (Danger)
-                    DialogButton(
-                        text = "Exit",
-                        isFocused = exitButtonFocused,
-                        isPrimary = false,
-                        isDanger = true,
-                        focusRequester = exitFocusRequester,
-                        onFocusChanged = { exitButtonFocused = it },
-                        onClick = {
-                            // Multiple methods to ensure app exits on both mobile and TV
-                            try {
-                                // Method 1: Try ComponentActivity
-                                (context as? ComponentActivity)?.let { activity ->
-                                    activity.finishAndRemoveTask()
-                                    return@DialogButton
-                                }
-
-                                // Method 2: Try regular Activity
-                                (context as? Activity)?.let { activity ->
-                                    activity.finishAndRemoveTask()
-                                    return@DialogButton
-                                }
-
-                                // Method 3: Force exit as last resort
-                                exitProcess(0)
-                            } catch (e: Exception) {
-                                // If all else fails
-                                exitProcess(0)
-                            } finally {
-                                onExit()
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Instructions (only visible on TV)
-                Text(
-                    text = "Use ← → to navigate • OK to select",
-                    color = Color(0xFF666666),
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }
@@ -278,15 +325,6 @@ private fun DialogButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = when {
-        isDanger && isFocused -> Color(0xFFFF4757)
-        isDanger -> Color(0xFFE84142)
-        isPrimary && isFocused -> Color(0xFF0A84FF)
-        isPrimary -> Color(0xFF0066CC)
-        isFocused -> Color(0xFF3A3A3C)
-        else -> Color(0xFF2C2C2E)
-    }
-
     val scale = if (isFocused) 1.05f else 1f
 
     Button(
@@ -294,40 +332,106 @@ private fun DialogButton(
         modifier = modifier
             .focusRequester(focusRequester)
             .focusable()
-            .height(56.dp)
+            .height(58.dp)
             .onFocusChanged { onFocusChanged(it.isFocused) }
             .scale(scale)
+            .shadow(
+                elevation = if (isFocused) 16.dp else 4.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = if (isDanger)
+                    Color(0xFFEC4899).copy(alpha = 0.5f)
+                else
+                    Color(0xFF6366F1).copy(alpha = 0.5f)
+            )
             .then(
                 if (isFocused) {
                     Modifier.border(
-                        width = 3.dp,
-                        color = Color.White,
+                        width = 2.dp,
+                        brush = Brush.linearGradient(
+                            colors = if (isDanger) {
+                                listOf(
+                                    Color(0xFFEC4899),
+                                    Color(0xFFEF4444)
+                                )
+                            } else {
+                                listOf(
+                                    Color(0xFF6366F1),
+                                    Color(0xFF8B5CF6)
+                                )
+                            }
+                        ),
                         shape = RoundedCornerShape(16.dp)
                     )
                 } else Modifier
             ),
         colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor,
-            contentColor = Color.White
+            containerColor = Color.Transparent
         ),
         shape = RoundedCornerShape(16.dp),
         elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = if (isFocused) 8.dp else 2.dp,
-            pressedElevation = 12.dp
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp
         )
     ) {
-        if (isDanger) {
-            Icon(
-                imageVector = Icons.Default.ExitToApp,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = when {
+                            isDanger && isFocused -> listOf(
+                                Color(0xFFEC4899).copy(alpha = 0.4f),
+                                Color(0xFFEF4444).copy(alpha = 0.4f)
+                            )
+                            isDanger -> listOf(
+                                Color(0xFFEC4899).copy(alpha = 0.2f),
+                                Color(0xFFEF4444).copy(alpha = 0.2f)
+                            )
+                            isPrimary && isFocused -> listOf(
+                                Color(0xFF6366F1).copy(alpha = 0.4f),
+                                Color(0xFF8B5CF6).copy(alpha = 0.4f)
+                            )
+                            isPrimary -> listOf(
+                                Color(0xFF6366F1).copy(alpha = 0.2f),
+                                Color(0xFF8B5CF6).copy(alpha = 0.2f)
+                            )
+                            isFocused -> listOf(
+                                Color.White.copy(alpha = 0.2f),
+                                Color.White.copy(alpha = 0.15f)
+                            )
+                            else -> listOf(
+                                Color.White.copy(alpha = 0.1f),
+                                Color.White.copy(alpha = 0.05f)
+                            )
+                        }
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isDanger) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        tint = if (isFocused) Color(0xFFEC4899) else Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = text,
+                    fontSize = 17.sp,
+                    fontWeight = if (isFocused) FontWeight.Bold else FontWeight.SemiBold,
+                    color = Color.White,
+                    letterSpacing = 0.5.sp
+                )
+            }
         }
-        Text(
-            text = text,
-            fontSize = 18.sp,
-            fontWeight = if (isFocused) FontWeight.Bold else FontWeight.SemiBold
-        )
     }
 }

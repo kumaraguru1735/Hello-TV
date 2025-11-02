@@ -145,11 +145,11 @@ fun ChannelChangeOverlay(
                             horizontalArrangement = Arrangement.spacedBy(if (isTV) 24.dp else 20.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Channel number badge with gradient
+                            // Channel number badge with gradient - Changed to rounded rectangle
                             Box(
                                 modifier = Modifier
                                     .size(if (isTV) 72.dp else if (isTablet) 64.dp else 56.dp)
-                                    .clip(CircleShape)
+                                    .clip(RoundedCornerShape(16.dp))
                                     .background(
                                         brush = Brush.linearGradient(
                                             colors = listOf(
@@ -161,7 +161,7 @@ fun ChannelChangeOverlay(
                                     .border(
                                         width = 2.dp,
                                         color = Color.White.copy(alpha = 0.3f),
-                                        shape = CircleShape
+                                        shape = RoundedCornerShape(16.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -186,7 +186,7 @@ fun ChannelChangeOverlay(
                                 }
                             }
 
-                            // Channel logo with glow effect
+                            // Channel logo with glow effect - Changed to rounded rectangle
                             Box(
                                 modifier = Modifier
                                     .size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp),
@@ -196,7 +196,7 @@ fun ChannelChangeOverlay(
                                 Box(
                                     modifier = Modifier
                                         .size(if (isTV) 88.dp else if (isTablet) 78.dp else 72.dp)
-                                        .clip(CircleShape)
+                                        .clip(RoundedCornerShape(16.dp))
                                         .background(
                                             brush = Brush.radialGradient(
                                                 colors = listOf(
@@ -211,7 +211,7 @@ fun ChannelChangeOverlay(
                                 Box(
                                     modifier = Modifier
                                         .size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp)
-                                        .clip(CircleShape)
+                                        .clip(RoundedCornerShape(16.dp))
                                         .background(Color(0xFF2A2A3E))
                                         .border(
                                             width = 2.dp,
@@ -221,7 +221,7 @@ fun ChannelChangeOverlay(
                                                     Color(0xFF8B5CF6).copy(alpha = 0.5f)
                                                 )
                                             ),
-                                            shape = CircleShape
+                                            shape = RoundedCornerShape(16.dp)
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -230,7 +230,7 @@ fun ChannelChangeOverlay(
                                         contentDescription = "Channel Logo",
                                         modifier = Modifier
                                             .size(if (isTV) 72.dp else if (isTablet) 62.dp else 56.dp)
-                                            .clip(CircleShape),
+                                            .clip(RoundedCornerShape(14.dp)),
                                         contentScale = ContentScale.Crop
                                     )
 
@@ -248,27 +248,74 @@ fun ChannelChangeOverlay(
                             // Channel info
                             Column(
                                 modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(if (isTV) 8.dp else 6.dp)
+                                verticalArrangement = Arrangement.spacedBy(if (isTV) 6.dp else 4.dp)
                             ) {
-                                // Channel name with gradient text effect (simulated)
-                                Text(
-                                    text = channel.name,
-                                    color = Color.White,
-                                    fontSize = if (isTV) 26.sp else if (isTablet) 22.sp else 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    lineHeight = if (isTV) 32.sp else if (isTablet) 28.sp else 26.sp
-                                )
-
+                                // Top row: Channel name with LIVE badge
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Category badge
+                                    // Channel name
+                                    Text(
+                                        text = channel.name,
+                                        color = Color.White,
+                                        fontSize = if (isTV) 26.sp else if (isTablet) 22.sp else 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Live badge (always visible on the right)
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFEF4444).copy(alpha = 0.2f))
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFEF4444).copy(alpha = 0.5f),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(
+                                                horizontal = if (isTV) 10.dp else 8.dp,
+                                                vertical = if (isTV) 5.dp else 4.dp
+                                            )
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(if (isTV) 7.dp else 6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFFEF4444))
+                                            )
+                                            Text(
+                                                text = "LIVE",
+                                                color = Color(0xFFEF4444),
+                                                fontSize = if (isTV) 10.sp else 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Bottom row: Category and DRM badges
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    // Category badge (can take available space)
                                     if (channel.category.isNotEmpty()) {
                                         Box(
                                             modifier = Modifier
+                                                .weight(1f, fill = false)
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .background(
                                                     brush = Brush.horizontalGradient(
@@ -284,21 +331,23 @@ fun ChannelChangeOverlay(
                                                     shape = RoundedCornerShape(8.dp)
                                                 )
                                                 .padding(
-                                                    horizontal = if (isTV) 14.dp else 12.dp,
-                                                    vertical = if (isTV) 6.dp else 5.dp
+                                                    horizontal = if (isTV) 12.dp else 10.dp,
+                                                    vertical = if (isTV) 5.dp else 4.dp
                                                 )
                                         ) {
                                             Text(
                                                 text = channel.category.uppercase(),
                                                 color = Color.White.copy(alpha = 0.9f),
-                                                fontSize = if (isTV) 13.sp else if (isTablet) 12.sp else 11.sp,
+                                                fontSize = if (isTV) 12.sp else if (isTablet) 11.sp else 10.sp,
                                                 fontWeight = FontWeight.SemiBold,
-                                                letterSpacing = 1.sp
+                                                letterSpacing = 0.8.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
                                     }
 
-                                    // DRM badge
+                                    // DRM badge (fixed size)
                                     if (!channel.drmUrl.isNullOrEmpty()) {
                                         Box(
                                             modifier = Modifier
@@ -310,69 +359,34 @@ fun ChannelChangeOverlay(
                                                     shape = RoundedCornerShape(8.dp)
                                                 )
                                                 .padding(
-                                                    horizontal = if (isTV) 12.dp else 10.dp,
-                                                    vertical = if (isTV) 6.dp else 5.dp
+                                                    horizontal = if (isTV) 10.dp else 8.dp,
+                                                    vertical = if (isTV) 5.dp else 4.dp
                                                 )
                                         ) {
                                             Row(
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(5.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Lock,
                                                     contentDescription = "DRM",
                                                     tint = Color(0xFFFBBF24),
-                                                    modifier = Modifier.size(if (isTV) 14.dp else 12.dp)
+                                                    modifier = Modifier.size(if (isTV) 12.dp else 11.dp)
                                                 )
                                                 Text(
                                                     text = "DRM",
                                                     color = Color(0xFFFBBF24),
-                                                    fontSize = if (isTV) 11.sp else 10.sp,
+                                                    fontSize = if (isTV) 10.sp else 9.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     letterSpacing = 0.5.sp
                                                 )
                                             }
                                         }
                                     }
-
-                                    // Live badge
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFEF4444).copy(alpha = 0.2f))
-                                            .border(
-                                                width = 1.dp,
-                                                color = Color(0xFFEF4444).copy(alpha = 0.5f),
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .padding(
-                                                horizontal = if (isTV) 12.dp else 10.dp,
-                                                vertical = if (isTV) 6.dp else 5.dp
-                                            )
-                                    ) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(if (isTV) 8.dp else 7.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color(0xFFEF4444))
-                                            )
-                                            Text(
-                                                text = "LIVE",
-                                                color = Color(0xFFEF4444),
-                                                fontSize = if (isTV) 11.sp else 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = 0.5.sp
-                                            )
-                                        }
-                                    }
                                 }
 
                                 // Progress indicator (decorative)
-                                Spacer(modifier = Modifier.height(if (isTV) 4.dp else 2.dp))
+                                Spacer(modifier = Modifier.height(if (isTV) 2.dp else 1.dp))
                                 LinearProgressIndicator(
                                     progress = 0.7f,
                                     modifier = Modifier
