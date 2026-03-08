@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,24 +40,27 @@ fun MobileChannelSheet(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val listState = rememberLazyListState()
+    val channelListState = rememberLazyListState()
 
     // Filter channels by search
     val filteredChannels = remember(searchQuery, vm.channels) {
         if (searchQuery.isEmpty()) vm.channels
-        else vm.channels.filter { it.name.contains(searchQuery, ignoreCase = true) || it.channelNo.toString().contains(searchQuery) }
+        else vm.channels.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+            it.channelNo.toString().contains(searchQuery)
+        }
     }
 
     LaunchedEffect(vm.selectedChannelIndex) {
         if (filteredChannels.isNotEmpty() && searchQuery.isEmpty()) {
-            listState.animateScrollToItem(vm.selectedChannelIndex.coerceIn(0, filteredChannels.size - 1))
+            channelListState.animateScrollToItem(vm.selectedChannelIndex.coerceIn(0, filteredChannels.size - 1))
         }
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = SurfaceDark,
+        containerColor = Color(0xFF0D1B2A),
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -64,97 +68,126 @@ fun MobileChannelSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(TextMuted)
+                    .background(Color.White.copy(alpha = 0.2f))
             )
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .padding(horizontal = 16.dp)
+                .fillMaxHeight(0.9f)
         ) {
-            // Search bar
+            // ── Search bar ──
             BasicTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
+                textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
                 cursorBrush = SolidColor(HotstarBlue),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(SurfaceElevated)
+                    .background(Color.White.copy(alpha = 0.06f))
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 decorationBox = { innerTextField ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Search, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Search, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Box(Modifier.weight(1f)) {
                             if (searchQuery.isEmpty()) {
-                                Text("Search channels...", color = TextDisabled, fontSize = 14.sp)
+                                Text("Search channels...", color = Color.White.copy(alpha = 0.3f), fontSize = 14.sp)
                             }
                             innerTextField()
                         }
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(20.dp)) {
-                                Icon(Icons.Default.Clear, null, tint = TextMuted, modifier = Modifier.size(16.dp))
-                            }
+                            Icon(
+                                Icons.Default.Clear, null,
+                                tint = Color.White.copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp).clickable { searchQuery = "" }
+                            )
                         }
                     }
                 }
             )
 
-            // Language filter chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(vertical = 6.dp)
-            ) {
-                item {
-                    MobileFilterChip("All", vm.selectedLanguageId == null) {
-                        vm.selectedLanguageId = null
-                        vm.applyFilters()
+            // ── Language chips (horizontal, top) ──
+            if (vm.languages.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    item {
+                        LanguageChip("All", vm.selectedLanguageId == null) {
+                            vm.selectedLanguageId = null
+                            vm.applyFilters()
+                        }
                     }
-                }
-                items(vm.languages) { lang ->
-                    MobileFilterChip(lang.name, vm.selectedLanguageId == lang.id) {
-                        vm.selectedLanguageId = if (vm.selectedLanguageId == lang.id) null else lang.id
-                        vm.applyFilters()
-                    }
-                }
-            }
-
-            // Category filter chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                item {
-                    MobileFilterChip("All", vm.selectedCategoryId == null) {
-                        vm.selectedCategoryId = null
-                        vm.applyFilters()
-                    }
-                }
-                items(vm.categories) { cat ->
-                    MobileFilterChip(cat.name, vm.selectedCategoryId == cat.id) {
-                        vm.selectedCategoryId = if (vm.selectedCategoryId == cat.id) null else cat.id
-                        vm.applyFilters()
+                    items(vm.languages) { lang ->
+                        LanguageChip(lang.name, vm.selectedLanguageId == lang.id) {
+                            vm.selectedLanguageId = if (vm.selectedLanguageId == lang.id) null else lang.id
+                            vm.applyFilters()
+                        }
                     }
                 }
             }
 
-            // Channel list
-            LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+            // ── Main content: Categories (left) + Channels (right) ──
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) {
-                itemsIndexed(filteredChannels) { index, channel ->
-                    val originalIndex = if (searchQuery.isEmpty()) index else vm.channels.indexOf(channel)
-                    MobileChannelItem(
-                        channel = channel,
-                        isSelected = originalIndex == vm.selectedChannelIndex,
-                        onClick = { onChannelSelected(originalIndex) }
-                    )
+                // ── Left: Category column ──
+                if (vm.categories.isNotEmpty() && searchQuery.isEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .width(90.dp)
+                            .fillMaxHeight()
+                            .background(Color.White.copy(alpha = 0.03f)),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        item {
+                            CategoryItem("All", vm.selectedCategoryId == null) {
+                                vm.selectedCategoryId = null
+                                vm.applyFilters()
+                            }
+                        }
+                        items(vm.categories) { cat ->
+                            CategoryItem(cat.name, vm.selectedCategoryId == cat.id) {
+                                vm.selectedCategoryId = if (vm.selectedCategoryId == cat.id) null else cat.id
+                                vm.applyFilters()
+                            }
+                        }
+                    }
+                }
+
+                // ── Right: Channel list ──
+                LazyColumn(
+                    state = channelListState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    // Channel count header
+                    item {
+                        Text(
+                            "${filteredChannels.size} channels",
+                            color = Color.White.copy(alpha = 0.3f),
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+                    }
+
+                    itemsIndexed(filteredChannels) { index, channel ->
+                        val originalIndex = if (searchQuery.isEmpty()) index else vm.channels.indexOf(channel)
+                        ChannelRow(
+                            channel = channel,
+                            isSelected = originalIndex == vm.selectedChannelIndex,
+                            onClick = { onChannelSelected(originalIndex) }
+                        )
+                    }
                 }
             }
         }
@@ -162,7 +195,7 @@ fun MobileChannelSheet(
 }
 
 @Composable
-private fun MobileFilterChip(
+private fun LanguageChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit
@@ -170,13 +203,16 @@ private fun MobileFilterChip(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) HotstarBlue else SurfaceElevated)
+            .background(
+                if (selected) HotstarBlue
+                else Color.White.copy(alpha = 0.06f)
+            )
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             label,
-            color = if (selected) Color.White else TextSecondary,
+            color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
             fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
@@ -184,7 +220,46 @@ private fun MobileFilterChip(
 }
 
 @Composable
-private fun MobileChannelItem(
+private fun CategoryItem(
+    name: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (selected) HotstarBlue.copy(alpha = 0.15f) else Color.Transparent
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Column(horizontalAlignment = Alignment.Start) {
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .width(3.dp)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(HotstarBlue)
+                )
+            }
+            Text(
+                name,
+                color = if (selected) HotstarBlueLight else Color.White.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 14.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChannelRow(
     channel: Channel,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -193,55 +268,64 @@ private fun MobileChannelItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) HotstarBlue.copy(alpha = 0.15f) else Color.Transparent)
+            .background(
+                if (isSelected) HotstarBlue.copy(alpha = 0.1f)
+                else Color.Transparent
+            )
             .clickable { onClick() }
-            .padding(10.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Channel number
         Text(
             channel.channelNo.toString(),
-            color = TextMuted,
-            fontSize = 12.sp,
-            modifier = Modifier.width(30.dp)
+            color = if (isSelected) HotstarBlue else Color.White.copy(alpha = 0.3f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.width(28.dp),
+            textAlign = TextAlign.Center
         )
 
+        // Logo
         if (channel.image.isNotEmpty()) {
             AsyncImage(
                 model = channel.image,
                 contentDescription = channel.name,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(34.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceElevated)
+                    .background(Color.White.copy(alpha = 0.05f))
             )
         } else {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(34.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceElevated),
+                    .background(Color.White.copy(alpha = 0.05f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
             }
         }
 
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
 
+        // Name
         Text(
             channel.name,
-            color = if (isSelected) HotstarBlueLight else TextPrimary,
-            fontSize = 14.sp,
+            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.8f),
+            fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
 
+        // Live indicator
         if (isSelected) {
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(StatusLive)
             )

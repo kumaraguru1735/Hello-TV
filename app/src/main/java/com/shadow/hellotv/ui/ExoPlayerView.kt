@@ -9,7 +9,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -199,6 +202,28 @@ fun ExoPlayerView(
             log( "Started playing: ${channel.name}")
         } catch (e: Exception) {
             log( "Failed to play ${channel.name}: ${e.message}")
+        }
+    }
+
+    // Pause on background, resume on foreground
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    log("Pausing player (app backgrounded)")
+                    exoPlayer.playWhenReady = false
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    log("Resuming player (app foregrounded)")
+                    exoPlayer.playWhenReady = true
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

@@ -67,6 +67,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var showSettingsPanel by mutableStateOf(false)
     var showVolumeOverlay by mutableStateOf(false)
     var showSessionManager by mutableStateOf(false)
+    var isFullscreen by mutableStateOf(false)
     var currentExoPlayer by mutableStateOf<ExoPlayer?>(null)
 
     private var isContentLoading = false

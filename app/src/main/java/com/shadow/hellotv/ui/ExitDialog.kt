@@ -8,36 +8,19 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
@@ -50,13 +33,17 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shadow.hellotv.LocalIsTv
 import com.shadow.hellotv.ui.theme.*
 import kotlin.system.exitProcess
+
+private val Indigo = Color(0xFF6366F1)
 
 @Composable
 fun ExitDialog(
@@ -64,250 +51,179 @@ fun ExitDialog(
     onDismiss: () -> Unit
 ) {
     if (showExitDialog) {
-        BackHandler(enabled = true) {
-            onDismiss()
-        }
-
-        ExitDialogContent(
-            onExit = {
-                onDismiss()
-            },
-            onCancel = onDismiss
-        )
+        BackHandler(enabled = true) { onDismiss() }
+        ExitDialogContent(onCancel = onDismiss)
     }
 }
 
 @Composable
-private fun ExitDialogContent(
-    onExit: () -> Unit,
-    onCancel: () -> Unit
-) {
+private fun ExitDialogContent(onCancel: () -> Unit) {
     val context = LocalContext.current
-    val exitFocusRequester = remember { FocusRequester() }
-    val cancelFocusRequester = remember { FocusRequester() }
+    val isTv = LocalIsTv.current
+    val config = LocalConfiguration.current
+    val isPortrait = config.screenHeightDp > config.screenWidthDp
+    val isSmall = config.screenWidthDp < 400
 
-    var exitButtonFocused by remember { mutableStateOf(false) }
-    var cancelButtonFocused by remember { mutableStateOf(false) }
+    val cancelFocus = remember { FocusRequester() }
+    val exitFocus = remember { FocusRequester() }
+    var cancelFocused by remember { mutableStateOf(false) }
+    var exitFocused by remember { mutableStateOf(false) }
 
-    // Auto-focus the Cancel button (safer default)
-    LaunchedEffect(Unit) {
-        cancelFocusRequester.requestFocus()
+    LaunchedEffect(Unit) { cancelFocus.requestFocus() }
+
+    fun doExit() {
+        try {
+            (context as? ComponentActivity)?.finishAndRemoveTask()
+                ?: (context as? Activity)?.finishAndRemoveTask()
+                ?: exitProcess(0)
+        } catch (_: Exception) {
+            exitProcess(0)
+        }
     }
 
-    // Full screen overlay with blur effect
+    // Overlay
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xCC000000),
-                        Color(0xEE000000)
-                    )
-                )
-            )
+            .background(Color.Black.copy(alpha = 0.75f))
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
-            ) {
-                onCancel()
-            }
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type == KeyEventType.KeyDown) {
-                    when (keyEvent.key) {
-                        Key.Back, Key.Escape -> {
-                            onCancel()
-                            true
-                        }
+            ) { onCancel() }
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.Back, Key.Escape -> { onCancel(); true }
                         Key.DirectionLeft, Key.DirectionRight -> {
-                            if (exitButtonFocused) {
-                                cancelFocusRequester.requestFocus()
-                            } else {
-                                exitFocusRequester.requestFocus()
-                            }
+                            if (exitFocused) cancelFocus.requestFocus()
+                            else exitFocus.requestFocus()
                             true
                         }
                         else -> false
                     }
                 } else false
-            }
+            },
+        contentAlignment = Alignment.Center
     ) {
-        // Modern dialog card
-        Card(
+        // Dialog card - responsive width
+        val cardWidth = when {
+            isSmall || isPortrait -> Modifier.fillMaxWidth(0.85f)
+            else -> Modifier.width(420.dp)
+        }
+
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(24.dp)
-                .width(480.dp)
-                .shadow(
-                    elevation = 32.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    spotColor = HotstarPink.copy(alpha = 0.4f)
+                .then(cardWidth)
+                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFFEF4444).copy(alpha = 0.2f))
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF131B2E), Color(0xFF0F1724))
+                    )
+                )
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.03f))
+                    ),
+                    RoundedCornerShape(24.dp)
                 )
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    // Prevent clicks on card from closing dialog
-                },
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
-            ),
-            shape = RoundedCornerShape(28.dp)
+                ) { /* block clicks from closing */ }
+                .padding(if (isPortrait) 24.dp else 32.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                SurfaceDark,
-                                SurfaceCard
-                            )
-                        )
-                    )
-                    .border(
-                        width = 1.5.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                HotstarPink.copy(alpha = 0.5f),
-                                Color(0xFFEF4444).copy(alpha = 0.5f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(28.dp)
-                    )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
+                // Warning icon
+                val iconSize = if (isPortrait) 56.dp else 72.dp
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(36.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .size(iconSize)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    Color(0xFFEF4444).copy(alpha = 0.2f),
+                                    Color(0xFFEF4444).copy(alpha = 0.05f)
+                                )
+                            )
+                        )
+                        .border(
+                            1.5.dp,
+                            Color(0xFFEF4444).copy(alpha = 0.3f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Icon with gradient background
-                    Box(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .background(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        HotstarPink.copy(alpha = 0.3f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(88.dp)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            HotstarPink.copy(alpha = 0.3f),
-                                            Color(0xFFEF4444).copy(alpha = 0.3f)
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                )
-                                .border(
-                                    width = 2.dp,
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            HotstarPink.copy(alpha = 0.6f),
-                                            Color(0xFFEF4444).copy(alpha = 0.6f)
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Exit Warning",
-                                tint = HotstarPink,
-                                modifier = Modifier.size(48.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        Icons.Default.Warning, null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(iconSize * 0.5f)
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                Spacer(Modifier.height(if (isPortrait) 16.dp else 24.dp))
 
-                    // Title
-                    Text(
-                        text = "Exit Application?",
-                        color = Color.White,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        letterSpacing = 0.5.sp
+                Text(
+                    "Exit App?",
+                    color = Color.White,
+                    fontSize = if (isPortrait) 22.sp else 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    "Are you sure you want to close HelloTV?",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = if (isPortrait) 13.sp else 15.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(if (isPortrait) 20.dp else 28.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Cancel
+                    ExitBtn(
+                        text = "Cancel",
+                        isFocused = cancelFocused,
+                        focusRequester = cancelFocus,
+                        onFocusChange = { cancelFocused = it },
+                        isPortrait = isPortrait,
+                        colors = listOf(HotstarBlue, Indigo),
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Description
-                    Text(
-                        text = "Are you sure you want to close the app?\nAll progress will be saved.",
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 15.sp,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 22.sp
+                    // Exit
+                    ExitBtn(
+                        text = "Exit",
+                        icon = Icons.Default.ExitToApp,
+                        isFocused = exitFocused,
+                        focusRequester = exitFocus,
+                        onFocusChange = { exitFocused = it },
+                        isPortrait = isPortrait,
+                        colors = listOf(Color(0xFFEF4444), Color(0xFFDC2626)),
+                        onClick = ::doExit,
+                        modifier = Modifier.weight(1f)
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(36.dp))
-
-                    // Buttons row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Cancel Button (Primary)
-                        DialogButton(
-                            text = "Cancel",
-                            isFocused = cancelButtonFocused,
-                            isPrimary = true,
-                            focusRequester = cancelFocusRequester,
-                            onFocusChanged = { cancelButtonFocused = it },
-                            onClick = onCancel,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        // Exit Button (Danger)
-                        DialogButton(
-                            text = "Exit",
-                            isFocused = exitButtonFocused,
-                            isPrimary = false,
-                            isDanger = true,
-                            focusRequester = exitFocusRequester,
-                            onFocusChanged = { exitButtonFocused = it },
-                            onClick = {
-                                try {
-                                    (context as? ComponentActivity)?.let { activity ->
-                                        activity.finishAndRemoveTask()
-                                        return@DialogButton
-                                    }
-
-                                    (context as? Activity)?.let { activity ->
-                                        activity.finishAndRemoveTask()
-                                        return@DialogButton
-                                    }
-
-                                    exitProcess(0)
-                                } catch (e: Exception) {
-                                    exitProcess(0)
-                                } finally {
-                                    onExit()
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Instructions
+                // TV navigation hint
+                if (isTv) {
+                    Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "Use ← → to navigate • OK to select",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center,
-                        letterSpacing = 0.5.sp
+                        "← → to navigate • OK to select",
+                        color = Color.White.copy(alpha = 0.3f),
+                        fontSize = 11.sp
                     )
                 }
             }
@@ -316,123 +232,70 @@ private fun ExitDialogContent(
 }
 
 @Composable
-private fun DialogButton(
+private fun ExitBtn(
     text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     isFocused: Boolean,
-    isPrimary: Boolean = false,
-    isDanger: Boolean = false,
     focusRequester: FocusRequester,
-    onFocusChanged: (Boolean) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
+    isPortrait: Boolean,
+    colors: List<Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scale = if (isFocused) 1.05f else 1f
+    val btnHeight = if (isPortrait) 44.dp else 50.dp
 
-    Button(
-        onClick = onClick,
+    Box(
         modifier = modifier
-            .focusRequester(focusRequester)
-            .focusable()
-            .height(58.dp)
-            .onFocusChanged { onFocusChanged(it.isFocused) }
-            .scale(scale)
+            .height(btnHeight)
             .shadow(
-                elevation = if (isFocused) 16.dp else 4.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = if (isDanger)
-                    HotstarPink.copy(alpha = 0.5f)
+                if (isFocused) 12.dp else 0.dp,
+                RoundedCornerShape(12.dp),
+                spotColor = colors[0].copy(alpha = 0.4f)
+            )
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (isFocused)
+                    Brush.horizontalGradient(colors)
                 else
-                    HotstarBlue.copy(alpha = 0.5f)
+                    Brush.horizontalGradient(colors.map { it.copy(alpha = 0.15f) })
             )
             .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = 2.dp,
-                        brush = Brush.linearGradient(
-                            colors = if (isDanger) {
-                                listOf(
-                                    HotstarPink,
-                                    Color(0xFFEF4444)
-                                )
-                            } else {
-                                listOf(
-                                    HotstarBlue,
-                                    GradientBlueEnd
-                                )
-                            }
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                } else Modifier
-            ),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = when {
-                            isDanger && isFocused -> listOf(
-                                HotstarPink.copy(alpha = 0.4f),
-                                Color(0xFFEF4444).copy(alpha = 0.4f)
-                            )
-                            isDanger -> listOf(
-                                HotstarPink.copy(alpha = 0.2f),
-                                Color(0xFFEF4444).copy(alpha = 0.2f)
-                            )
-                            isPrimary && isFocused -> listOf(
-                                HotstarBlue.copy(alpha = 0.4f),
-                                GradientBlueEnd.copy(alpha = 0.4f)
-                            )
-                            isPrimary -> listOf(
-                                HotstarBlue.copy(alpha = 0.2f),
-                                GradientBlueEnd.copy(alpha = 0.2f)
-                            )
-                            isFocused -> listOf(
-                                Color.White.copy(alpha = 0.2f),
-                                Color.White.copy(alpha = 0.15f)
-                            )
-                            else -> listOf(
-                                Color.White.copy(alpha = 0.1f),
-                                Color.White.copy(alpha = 0.05f)
-                            )
-                        }
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isDanger) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = null,
-                        tint = if (isFocused) HotstarPink else Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text(
-                    text = text,
-                    fontSize = 17.sp,
-                    fontWeight = if (isFocused) FontWeight.Bold else FontWeight.SemiBold,
-                    color = Color.White,
-                    letterSpacing = 0.5.sp
-                )
+                if (isFocused) Modifier.border(1.5.dp, colors[0], RoundedCornerShape(12.dp))
+                else Modifier
+            )
+            .focusRequester(focusRequester)
+            .onFocusChanged { onFocusChange(it.isFocused) }
+            .focusable()
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown &&
+                    (event.key == Key.Enter || event.key == Key.DirectionCenter)
+                ) {
+                    onClick(); true
+                } else false
             }
+            .clickable { onClick() }
+            .scale(if (isFocused) 1.03f else 1f),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    icon, null,
+                    tint = Color.White.copy(alpha = if (isFocused) 1f else 0.7f),
+                    modifier = Modifier.size(if (isPortrait) 16.dp else 18.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                text,
+                color = Color.White.copy(alpha = if (isFocused) 1f else 0.7f),
+                fontSize = if (isPortrait) 14.sp else 16.sp,
+                fontWeight = if (isFocused) FontWeight.Bold else FontWeight.SemiBold
+            )
         }
     }
 }

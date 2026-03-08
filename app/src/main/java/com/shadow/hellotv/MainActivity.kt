@@ -79,12 +79,18 @@ fun HelloTVApp() {
     val isTv = LocalIsTv.current
     val activity = LocalContext.current as? ComponentActivity
 
-    // Set orientation based on screen
-    SideEffect {
-        val orient = when (vm.currentScreen) {
-            AppScreen.LOGIN, AppScreen.SESSION_KICKOUT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            AppScreen.SPLASH -> ActivityInfo.SCREEN_ORIENTATION_USER
-            AppScreen.PLAYER -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    // Set orientation based on screen and device
+    val currentScreen = vm.currentScreen
+    val isFullscreen = vm.isFullscreen
+    LaunchedEffect(currentScreen, isFullscreen, isTv) {
+        val orient = if (isTv) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        } else {
+            when {
+                currentScreen == AppScreen.PLAYER && isFullscreen ->
+                    ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
         if (activity?.requestedOrientation != orient) {
             activity?.requestedOrientation = orient
@@ -98,6 +104,7 @@ fun HelloTVApp() {
             vm.showChannelList -> vm.showChannelList = false
             vm.showSettingsPanel -> vm.showSettingsPanel = false
             vm.showExitDialog -> vm.showExitDialog = false
+            vm.isFullscreen -> vm.isFullscreen = false
             else -> vm.showExitDialog = true
         }
     }

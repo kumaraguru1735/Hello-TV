@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
 import androidx.media3.common.TrackSelectionOverride
-import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import com.shadow.hellotv.ui.theme.*
 import com.shadow.hellotv.viewmodel.MainViewModel
@@ -37,26 +36,32 @@ fun MobileSettingsSheet(
         sheetState = sheetState,
         containerColor = SurfaceDark,
         dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(TextMuted)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(TextMuted)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("Settings", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Profile section
+            // ── Profile card ──
             item {
                 Card(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceCard)
                 ) {
                     Row(
@@ -65,12 +70,12 @@ fun MobileSettingsSheet(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(HotstarBlue.copy(alpha = 0.2f)),
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(HotstarBlue.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Person, null, tint = HotstarBlue, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Default.Person, null, tint = HotstarBlue, modifier = Modifier.size(24.dp))
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -87,21 +92,28 @@ fun MobileSettingsSheet(
                             )
                         }
                         vm.subscriptionInfo?.let {
-                            Text(
-                                it.status.replaceFirstChar { c -> c.uppercase() },
-                                color = StatusSuccess,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(StatusSuccess.copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    it.status.replaceFirstChar { c -> c.uppercase() },
+                                    color = StatusSuccess,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Video tracks
-            item { SectionHeader("Video Quality") }
+            // ── Video Quality ──
+            item { SectionLabel("Video Quality") }
             item {
-                TrackOptionItem("Auto (Adaptive)", true) {
+                TrackItem("Auto (Adaptive)", true) {
                     vm.currentExoPlayer?.let { player ->
                         player.trackSelectionParameters = player.trackSelectionParameters
                             .buildUpon()
@@ -117,7 +129,7 @@ fun MobileSettingsSheet(
                     val fmt = group.getTrackFormat(i)
                     val selected = group.isTrackSelected(i)
                     item {
-                        TrackOptionItem("${fmt.width}x${fmt.height} (${fmt.bitrate / 1000}kbps)", selected) {
+                        TrackItem("${fmt.width}x${fmt.height} (${fmt.bitrate / 1000}kbps)", selected) {
                             vm.currentExoPlayer?.let { player ->
                                 player.trackSelectionParameters = player.trackSelectionParameters
                                     .buildUpon()
@@ -129,18 +141,18 @@ fun MobileSettingsSheet(
                 }
             }
 
-            // Audio tracks
-            item { SectionHeader("Audio") }
+            // ── Audio ──
+            item { SectionLabel("Audio") }
             val audioGroups = vm.currentExoPlayer?.currentTracks?.groups?.filter { it.type == C.TRACK_TYPE_AUDIO } ?: emptyList()
             if (audioGroups.isEmpty()) {
-                item { Text("No audio tracks", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(8.dp)) }
+                item { Text("No audio tracks available", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(8.dp)) }
             }
             audioGroups.forEach { group ->
                 for (i in 0 until group.length) {
                     val fmt = group.getTrackFormat(i)
                     val selected = group.isTrackSelected(i)
                     item {
-                        TrackOptionItem(
+                        TrackItem(
                             "${fmt.language?.uppercase() ?: "Track ${i + 1}"} - ${fmt.label ?: "${fmt.channelCount}ch"}",
                             selected
                         ) {
@@ -155,48 +167,54 @@ fun MobileSettingsSheet(
                 }
             }
 
-            // Actions
+            // ── Actions ──
             item { Spacer(Modifier.height(4.dp)) }
             item {
-                ActionItem("Manage Sessions", Icons.Default.Devices) {
+                ActionRow("Manage Sessions", Icons.Default.Devices) {
                     vm.showSessionManager = true
                     onDismiss()
                 }
             }
             item {
-                ActionItem("Sign Out", Icons.Default.Logout, tint = StatusLive) {
+                ActionRow("Sign Out", Icons.Default.Logout, tint = StatusLive) {
                     vm.doLogout()
                     onDismiss()
                 }
             }
-            item { Spacer(Modifier.height(16.dp)) }
+            item { Spacer(Modifier.height(20.dp)) }
         }
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun SectionLabel(title: String) {
     Text(
         title,
         color = TextMuted,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.5.sp,
+        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp, start = 4.dp)
     )
 }
 
 @Composable
-private fun TrackOptionItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
+private fun TrackItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) HotstarBlue.copy(alpha = 0.15f) else Color.Transparent)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (isSelected) HotstarBlue.copy(alpha = 0.12f) else Color.Transparent)
             .clickable { onClick() }
-            .padding(12.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = if (isSelected) HotstarBlueLight else TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(
+            label,
+            color = if (isSelected) HotstarBlueLight else TextPrimary,
+            fontSize = 14.sp,
+            modifier = Modifier.weight(1f)
+        )
         if (isSelected) {
             Icon(Icons.Default.CheckCircle, null, tint = HotstarBlue, modifier = Modifier.size(18.dp))
         }
@@ -204,18 +222,28 @@ private fun TrackOptionItem(label: String, isSelected: Boolean, onClick: () -> U
 }
 
 @Composable
-private fun ActionItem(label: String, icon: ImageVector, tint: Color = TextSecondary, onClick: () -> Unit) {
+private fun ActionRow(label: String, icon: ImageVector, tint: Color = TextSecondary, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(SurfaceCard)
             .clickable { onClick() }
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(12.dp))
         Text(label, color = tint, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.weight(1f))
+        Icon(Icons.Default.ChevronRight, null, tint = TextDisabled, modifier = Modifier.size(18.dp))
     }
 }
