@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shadow.hellotv.ui.theme.*
 
 @Composable
 fun TvControlsHint(modifier: Modifier = Modifier) {
@@ -75,7 +76,7 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                 .shadow(
                     elevation = 16.dp,
                     shape = RoundedCornerShape(16.dp),
-                    spotColor = Color(0xFF6366F1).copy(alpha = 0.3f)
+                    spotColor = HotstarBlue.copy(alpha = 0.3f)
                 ),
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
@@ -87,8 +88,8 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF1E1E2E).copy(alpha = 0.96f),
-                                Color(0xFF2A2A3E).copy(alpha = 0.96f)
+                                SurfaceDark.copy(alpha = 0.96f),
+                                SurfaceCard.copy(alpha = 0.96f)
                             )
                         )
                     )
@@ -96,8 +97,8 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                         width = 1.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF6366F1).copy(alpha = 0.4f),
-                                Color(0xFF8B5CF6).copy(alpha = 0.4f)
+                                HotstarBlue.copy(alpha = 0.4f),
+                                HotstarPink.copy(alpha = 0.4f)
                             )
                         ),
                         shape = RoundedCornerShape(16.dp)
@@ -116,14 +117,14 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0xFF6366F1).copy(alpha = 0.3f),
-                                        Color(0xFF8B5CF6).copy(alpha = 0.2f)
+                                        HotstarBlue.copy(alpha = 0.3f),
+                                        HotstarPink.copy(alpha = 0.2f)
                                     )
                                 )
                             )
                             .border(
                                 width = 1.dp,
-                                color = Color(0xFF6366F1).copy(alpha = 0.5f),
+                                color = HotstarBlue.copy(alpha = 0.5f),
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -131,7 +132,7 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = Color(0xFF6366F1),
+                            tint = HotstarBlue,
                             modifier = Modifier.size(if (isTV) 16.dp else 14.dp)
                         )
                     }

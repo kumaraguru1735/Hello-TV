@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shadow.hellotv.ui.theme.*
 import kotlin.system.exitProcess
 
 @Composable
@@ -140,7 +141,7 @@ private fun ExitDialogContent(
                 .shadow(
                     elevation = 32.dp,
                     shape = RoundedCornerShape(28.dp),
-                    spotColor = Color(0xFFEC4899).copy(alpha = 0.4f)
+                    spotColor = HotstarPink.copy(alpha = 0.4f)
                 )
                 .clickable(
                     indication = null,
@@ -158,8 +159,8 @@ private fun ExitDialogContent(
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF1E1E2E),
-                                Color(0xFF2A2A3E)
+                                SurfaceDark,
+                                SurfaceCard
                             )
                         )
                     )
@@ -167,7 +168,7 @@ private fun ExitDialogContent(
                         width = 1.5.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFFEC4899).copy(alpha = 0.5f),
+                                HotstarPink.copy(alpha = 0.5f),
                                 Color(0xFFEF4444).copy(alpha = 0.5f)
                             )
                         ),
@@ -187,7 +188,7 @@ private fun ExitDialogContent(
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0xFFEC4899).copy(alpha = 0.3f),
+                                        HotstarPink.copy(alpha = 0.3f),
                                         Color.Transparent
                                     )
                                 )
@@ -199,7 +200,7 @@ private fun ExitDialogContent(
                                 .background(
                                     brush = Brush.linearGradient(
                                         colors = listOf(
-                                            Color(0xFFEC4899).copy(alpha = 0.3f),
+                                            HotstarPink.copy(alpha = 0.3f),
                                             Color(0xFFEF4444).copy(alpha = 0.3f)
                                         )
                                     ),
@@ -209,7 +210,7 @@ private fun ExitDialogContent(
                                     width = 2.dp,
                                     brush = Brush.linearGradient(
                                         colors = listOf(
-                                            Color(0xFFEC4899).copy(alpha = 0.6f),
+                                            HotstarPink.copy(alpha = 0.6f),
                                             Color(0xFFEF4444).copy(alpha = 0.6f)
                                         )
                                     ),
@@ -220,7 +221,7 @@ private fun ExitDialogContent(
                             Icon(
                                 imageVector = Icons.Default.Warning,
                                 contentDescription = "Exit Warning",
-                                tint = Color(0xFFEC4899),
+                                tint = HotstarPink,
                                 modifier = Modifier.size(48.dp)
                             )
                         }
@@ -339,9 +340,9 @@ private fun DialogButton(
                 elevation = if (isFocused) 16.dp else 4.dp,
                 shape = RoundedCornerShape(16.dp),
                 spotColor = if (isDanger)
-                    Color(0xFFEC4899).copy(alpha = 0.5f)
+                    HotstarPink.copy(alpha = 0.5f)
                 else
-                    Color(0xFF6366F1).copy(alpha = 0.5f)
+                    HotstarBlue.copy(alpha = 0.5f)
             )
             .then(
                 if (isFocused) {
@@ -350,13 +351,13 @@ private fun DialogButton(
                         brush = Brush.linearGradient(
                             colors = if (isDanger) {
                                 listOf(
-                                    Color(0xFFEC4899),
+                                    HotstarPink,
                                     Color(0xFFEF4444)
                                 )
                             } else {
                                 listOf(
-                                    Color(0xFF6366F1),
-                                    Color(0xFF8B5CF6)
+                                    HotstarBlue,
+                                    GradientBlueEnd
                                 )
                             }
                         ),
@@ -380,20 +381,20 @@ private fun DialogButton(
                     brush = Brush.horizontalGradient(
                         colors = when {
                             isDanger && isFocused -> listOf(
-                                Color(0xFFEC4899).copy(alpha = 0.4f),
+                                HotstarPink.copy(alpha = 0.4f),
                                 Color(0xFFEF4444).copy(alpha = 0.4f)
                             )
                             isDanger -> listOf(
-                                Color(0xFFEC4899).copy(alpha = 0.2f),
+                                HotstarPink.copy(alpha = 0.2f),
                                 Color(0xFFEF4444).copy(alpha = 0.2f)
                             )
                             isPrimary && isFocused -> listOf(
-                                Color(0xFF6366F1).copy(alpha = 0.4f),
-                                Color(0xFF8B5CF6).copy(alpha = 0.4f)
+                                HotstarBlue.copy(alpha = 0.4f),
+                                GradientBlueEnd.copy(alpha = 0.4f)
                             )
                             isPrimary -> listOf(
-                                Color(0xFF6366F1).copy(alpha = 0.2f),
-                                Color(0xFF8B5CF6).copy(alpha = 0.2f)
+                                HotstarBlue.copy(alpha = 0.2f),
+                                GradientBlueEnd.copy(alpha = 0.2f)
                             )
                             isFocused -> listOf(
                                 Color.White.copy(alpha = 0.2f),
@@ -419,7 +420,7 @@ private fun DialogButton(
                     Icon(
                         imageVector = Icons.Default.ExitToApp,
                         contentDescription = null,
-                        tint = if (isFocused) Color(0xFFEC4899) else Color.White.copy(alpha = 0.7f),
+                        tint = if (isFocused) HotstarPink else Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))

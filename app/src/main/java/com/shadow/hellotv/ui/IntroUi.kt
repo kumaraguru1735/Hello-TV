@@ -42,19 +42,17 @@ fun IntroUi(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0A0E27),
-                        Color(0xFF1A1F3A),
-                        Color(0xFF0A0E27)
+                        SurfaceDark,
+                        HotstarNavy,
+                        SurfaceDark
                     )
                 )
             )
     ) {
-        // Animated background particles
         if (isLoading) {
             AnimatedBackgroundParticles()
         }
 
-        // Main content
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,22 +61,16 @@ fun IntroUi(
             verticalArrangement = Arrangement.Center
         ) {
             if (errorMessage != null) {
-                // Error State
-                ErrorContent(
-                    errorMessage = errorMessage,
-                    onRetry = onRetry
-                )
+                ErrorContent(errorMessage = errorMessage, onRetry = onRetry)
             } else {
-                // Loading State
                 LoadingContent(message = message)
             }
         }
 
-        // Version info at bottom
         Text(
             text = "v1.0.0",
             fontSize = 12.sp,
-            color = Color(0xFF666666),
+            color = TextDisabled,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)
@@ -88,12 +80,10 @@ fun IntroUi(
 
 @Composable
 fun LoadingContent(message: String) {
-    // App logo with animation
     AnimatedTVLogo()
 
     Spacer(modifier = Modifier.height(48.dp))
 
-    // App name
     Text(
         text = "HelloTV",
         fontSize = 48.sp,
@@ -105,24 +95,21 @@ fun LoadingContent(message: String) {
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    // Tagline
     Text(
         text = "Your Premium IPTV Experience",
         fontSize = 16.sp,
         fontWeight = FontWeight.Light,
-        color = Color(0xFFB0B0B0),
+        color = TextMuted,
         textAlign = TextAlign.Center,
         letterSpacing = 1.sp
     )
 
     Spacer(modifier = Modifier.height(64.dp))
 
-    // Custom circular progress
     AnimatedCircularProgress()
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    // Loading text with animation
     AnimatedLoadingText(text = message)
 }
 
@@ -131,16 +118,12 @@ fun ErrorContent(
     errorMessage: String,
     onRetry: () -> Unit
 ) {
-    // Error icon
     Box(
         modifier = Modifier
             .size(100.dp)
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFFF6B6B),
-                        Color(0xFFFF4757)
-                    )
+                    colors = listOf(StatusLive, HotstarPink)
                 ),
                 shape = androidx.compose.foundation.shape.CircleShape
             ),
@@ -156,7 +139,6 @@ fun ErrorContent(
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    // Error title
     Text(
         text = "Oops!",
         fontSize = 42.sp,
@@ -167,38 +149,35 @@ fun ErrorContent(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Error message
     Text(
         text = errorMessage,
         fontSize = 20.sp,
         fontWeight = FontWeight.Medium,
-        color = Color(0xFFFF6B6B),
+        color = StatusLive,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 48.dp)
     )
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Helper text
     Text(
         text = "Please check your internet connection\nand try again",
         fontSize = 14.sp,
         fontWeight = FontWeight.Normal,
-        color = Color(0xFF999999),
+        color = TextMuted,
         textAlign = TextAlign.Center,
         lineHeight = 20.sp
     )
 
     Spacer(modifier = Modifier.height(48.dp))
 
-    // Retry button
     Button(
         onClick = onRetry,
         modifier = Modifier
             .width(200.dp)
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF6366F1)
+            containerColor = HotstarBlue
         ),
         shape = RoundedCornerShape(28.dp),
         elevation = ButtonDefaults.buttonElevation(
@@ -223,11 +202,10 @@ fun ErrorContent(
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    // Instructions
     Text(
         text = "Press OK or tap to retry",
         fontSize = 13.sp,
-        color = Color(0xFF666666),
+        color = TextDisabled,
         textAlign = TextAlign.Center
     )
 }
@@ -264,15 +242,14 @@ fun AnimatedTVLogo() {
             val center = Offset(size.width / 2, size.height / 2)
             val radius = size.minDimension / 2
 
-            // Outer rotating ring
             rotate(rotation) {
                 drawCircle(
                     brush = Brush.sweepGradient(
                         colors = listOf(
-                            Color(0xFF6366F1),
-                            Color(0xFF8B5CF6),
-                            Color(0xFFEC4899),
-                            Color(0xFF6366F1)
+                            HotstarBlue,
+                            HotstarPink,
+                            HotstarBlueLight,
+                            HotstarBlue
                         )
                     ),
                     radius = radius * scale,
@@ -281,13 +258,11 @@ fun AnimatedTVLogo() {
                 )
             }
 
-            // Inner TV icon
             val tvWidth = radius * 0.8f
             val tvHeight = radius * 0.6f
             val left = center.x - tvWidth / 2
             val top = center.y - tvHeight / 2
 
-            // TV screen
             drawRoundRect(
                 color = Color.White,
                 topLeft = Offset(left, top),
@@ -295,17 +270,14 @@ fun AnimatedTVLogo() {
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f)
             )
 
-            // TV stand
             val standWidth = tvWidth * 0.6f
-            val standHeight = 8f
             drawRoundRect(
                 color = Color.White,
                 topLeft = Offset(center.x - standWidth / 2, top + tvHeight + 4f),
-                size = androidx.compose.ui.geometry.Size(standWidth, standHeight),
+                size = androidx.compose.ui.geometry.Size(standWidth, 8f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
             )
 
-            // Play icon on screen
             val playSize = radius * 0.3f
             val playPath = Path().apply {
                 moveTo(center.x - playSize * 0.3f, center.y - playSize * 0.4f)
@@ -316,10 +288,7 @@ fun AnimatedTVLogo() {
             drawPath(
                 path = playPath,
                 brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF6366F1),
-                        Color(0xFF8B5CF6)
-                    )
+                    colors = listOf(HotstarBlue, HotstarPink)
                 )
             )
         }
@@ -344,22 +313,20 @@ fun AnimatedCircularProgress() {
         val center = Offset(size.width / 2, size.height / 2)
         val radius = size.minDimension / 2 - 8f
 
-        // Background circle
         drawCircle(
-            color = Color(0xFF2A2F4A),
+            color = SurfaceElevated,
             radius = radius,
             center = center,
             style = Stroke(width = 6f)
         )
 
-        // Progress arc
         drawArc(
             brush = Brush.sweepGradient(
                 colors = listOf(
-                    Color(0xFF6366F1),
-                    Color(0xFF8B5CF6),
-                    Color(0xFFEC4899),
-                    Color(0xFF6366F1)
+                    HotstarBlue,
+                    HotstarPink,
+                    HotstarBlueLight,
+                    HotstarBlue
                 )
             ),
             startAngle = -90f,
@@ -393,7 +360,7 @@ fun AnimatedLoadingText(text: String) {
         text = "$text$dots",
         fontSize = 16.sp,
         fontWeight = FontWeight.Normal,
-        color = Color(0xFFB0B0B0),
+        color = TextMuted,
         textAlign = TextAlign.Center,
         modifier = Modifier.width(250.dp)
     )
@@ -427,7 +394,6 @@ fun AnimatedBackgroundParticles() {
         val centerX = size.width / 2
         val centerY = size.height / 2
 
-        // Draw multiple animated particles
         for (i in 0..8) {
             val angle = (offset1 + i * 40f) * Math.PI / 180f
             val radius = size.minDimension / 3 + (i * 20f)
@@ -435,7 +401,7 @@ fun AnimatedBackgroundParticles() {
             val y = centerY + (sin(angle) * radius).toFloat()
 
             drawCircle(
-                color = Color(0xFF6366F1).copy(alpha = 0.1f),
+                color = HotstarBlue.copy(alpha = 0.1f),
                 radius = 4f,
                 center = Offset(x, y)
             )
@@ -448,7 +414,7 @@ fun AnimatedBackgroundParticles() {
             val y = centerY + (sin(angle) * radius).toFloat()
 
             drawCircle(
-                color = Color(0xFFEC4899).copy(alpha = 0.08f),
+                color = HotstarPink.copy(alpha = 0.08f),
                 radius = 6f,
                 center = Offset(x, y)
             )

@@ -17,12 +17,12 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import com.shadow.hellotv.model.ChannelItem
-import com.shadow.hellotv.model.DRMType
+import com.shadow.hellotv.model.Channel
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -30,22 +30,24 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 private const val TAG = "ExoPlayerView"
+private fun log(msg: String) { Log.e(TAG, msg); println("[$TAG] $msg") }
 
 @UnstableApi
 @Composable
 fun ExoPlayerView(
-    channel: ChannelItem,
+    channel: Channel,
+    onPlayerReady: (ExoPlayer) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
     // Parse headers and create factory for each channel
     val (mediaSourceFactory, mediaItem) = remember(channel.id, channel.url) {
-        // Parse headers
         var userAgent = "Mozilla/5.0 (Linux; Android 10)"
         val headersMap = mutableMapOf<String, String>()
 
-        channel.playerHeaders?.let { element ->
+        // Parse player headers
+        channel.headers?.let { element ->
             when (element) {
                 is JsonPrimitive -> {
                     element.content.split("\n").forEach { line ->
@@ -75,9 +77,8 @@ fun ExoPlayerView(
             }
         }
 
-        Log.d(TAG, "📋 Headers for ${channel.name}: $headersMap")
+        log( "Headers for ${channel.name}: $headersMap")
 
-        // Create HTTP data source factory with headers
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(userAgent)
             .setAllowCrossProtocolRedirects(true)
@@ -95,30 +96,33 @@ fun ExoPlayerView(
         // Build media item
         val builder = MediaItem.Builder().setUri(channel.url)
 
-        // Set MIME type
+        // Set MIME type - prioritize URL extension over streamType (API streamType can be wrong)
         val mimeType = when {
             channel.url.contains(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
             channel.url.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
             channel.url.contains(".mp4", ignoreCase = true) -> MimeTypes.APPLICATION_MP4
-            else -> null
+            channel.streamType.equals("dash", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
+            channel.streamType.equals("hls", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
+            else -> null // Let ExoPlayer auto-detect
         }
+        log( "Channel: ${channel.name} | URL: ${channel.url.takeLast(40)} | streamType: ${channel.streamType} | mimeType: $mimeType")
         mimeType?.let { builder.setMimeType(it) }
 
         // Configure DRM
-        if (!channel.drmUrl.isNullOrEmpty() && channel.drmType != null) {
-            val drmUuid = when (channel.drmType) {
-                DRMType.CLEARKEY -> C.CLEARKEY_UUID
-                DRMType.WIDEVINE -> C.WIDEVINE_UUID
-                DRMType.PLAYREADY -> C.PLAYREADY_UUID
-                DRMType.FAIRPLAY -> null
+        if (!channel.drmLicenceUrl.isNullOrEmpty() && !channel.drmType.isNullOrEmpty()) {
+            val drmUuid = when (channel.drmType.lowercase()) {
+                "clearkey" -> C.CLEARKEY_UUID
+                "widevine" -> C.WIDEVINE_UUID
+                "playready" -> C.PLAYREADY_UUID
+                else -> null
             }
 
             drmUuid?.let { uuid ->
-                Log.d(TAG, "🔐 DRM: ${channel.drmType} for ${channel.name}")
+                log( "DRM: ${channel.drmType} for ${channel.name}")
                 val drmBuilder = MediaItem.DrmConfiguration.Builder(uuid)
-                    .setLicenseUri(channel.drmUrl)
+                    .setLicenseUri(channel.drmLicenceUrl)
 
-                channel.drmHeaders?.let { element ->
+                channel.drmLicenceHeaders?.let { element ->
                     val drmHeadersMap = when (element) {
                         is JsonPrimitive -> {
                             element.content.split("\n").mapNotNull { line ->
@@ -144,11 +148,17 @@ fun ExoPlayerView(
         Pair(sourceFactory, builder.build())
     }
 
-    // Create new ExoPlayer for each channel
+    // Create ExoPlayer with HEVC software decoding fallback
     val exoPlayer = remember(channel.id) {
-        Log.d(TAG, "🎬 Creating NEW ExoPlayer for: ${channel.name}")
+        log( "Creating ExoPlayer for: ${channel.name}")
+
+        // Enable software decoder fallback for HEVC/H.265 content
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            .setEnableDecoderFallback(true)
 
         ExoPlayer.Builder(context)
+            .setRenderersFactory(renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
             .build().apply {
                 addListener(object : Player.Listener {
@@ -160,11 +170,11 @@ fun ExoPlayerView(
                             Player.STATE_ENDED -> "ENDED"
                             else -> "UNKNOWN"
                         }
-                        Log.d(TAG, "🎮 ${channel.name} - State: $state")
+                        log( "${channel.name} - State: $state")
                     }
 
                     override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                        Log.e(TAG, "❌ ${channel.name} - Error: ${error.errorCodeName}", error)
+                        log( "${channel.name} - Error: ${error.errorCodeName} ${error.message}")
                     }
                 })
 
@@ -172,29 +182,30 @@ fun ExoPlayerView(
             }
     }
 
+    // Expose player to parent
+    LaunchedEffect(exoPlayer) {
+        onPlayerReady(exoPlayer)
+    }
+
     // Load and play media
     LaunchedEffect(channel.id) {
-        Log.d(TAG, "▶️ Loading: ${channel.name}")
-        Log.d(TAG, "🔗 URL: ${channel.url}")
+        log( "Loading: ${channel.name} | URL: ${channel.url}")
 
         try {
-            // Small delay to ensure previous player is fully released
             delay(50)
-
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true
-
-            Log.d(TAG, "✅ Started playing: ${channel.name}")
+            log( "Started playing: ${channel.name}")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to play ${channel.name}", e)
+            log( "Failed to play ${channel.name}: ${e.message}")
         }
     }
 
     // Cleanup when channel changes
     DisposableEffect(channel.id) {
         onDispose {
-            Log.d(TAG, "🛑 Releasing player for: ${channel.name}")
+            log( "Releasing player for: ${channel.name}")
             exoPlayer.stop()
             exoPlayer.release()
         }
@@ -202,7 +213,6 @@ fun ExoPlayerView(
 
     AndroidView(
         factory = { ctx ->
-            Log.d(TAG, "🖼️ Creating PlayerView for: ${channel.name}")
             PlayerView(ctx).apply {
                 player = exoPlayer
                 useController = false
@@ -215,8 +225,6 @@ fun ExoPlayerView(
             }
         },
         update = { view ->
-            // Critical: Update the player reference when it changes
-            Log.d(TAG, "🔄 Updating PlayerView with new player")
             view.player = exoPlayer
         },
         modifier = modifier.fillMaxSize()

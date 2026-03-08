@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shadow.hellotv.ui.theme.*
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -85,7 +86,7 @@ fun VolumeOverlay(
         Card(
             modifier = Modifier
                 .padding(if (isTV) 24.dp else if (isTablet) 20.dp else 16.dp)
-                .shadow(16.dp, RoundedCornerShape(if (isTV) 20.dp else 16.dp), spotColor = Color(0xFF6366F1).copy(0.4f)),
+                .shadow(16.dp, RoundedCornerShape(if (isTV) 20.dp else 16.dp), spotColor = HotstarBlue.copy(0.4f)),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             shape = RoundedCornerShape(if (isTV) 20.dp else 16.dp)
         ) {
@@ -93,12 +94,12 @@ fun VolumeOverlay(
                 modifier = Modifier
                     .background(
                         Brush.linearGradient(
-                            listOf(Color(0xFF1E1E2E).copy(0.96f), Color(0xFF2A2A3E).copy(0.96f))
+                            listOf(SurfaceDark.copy(0.96f), SurfaceCard.copy(0.96f))
                         )
                     )
                     .border(
                         1.2.dp,
-                        Brush.linearGradient(listOf(Color(0xFF6366F1).copy(0.5f), Color(0xFF8B5CF6).copy(0.5f))),
+                        Brush.linearGradient(listOf(HotstarBlue.copy(0.5f), HotstarPink.copy(0.5f))),
                         RoundedCornerShape(if (isTV) 20.dp else 16.dp)
                     )
                     .padding(if (isTV) 20.dp else if (isTablet) 18.dp else 16.dp)
@@ -151,7 +152,7 @@ fun VolumeOverlay(
                                                 if (isMuted || currentVolume == 0)
                                                     listOf(Color(0xFFEF4444), Color(0xFFDC2626))
                                                 else
-                                                    listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+                                                    listOf(HotstarBlue, HotstarPink)
                                             )
                                         )
                                         .clip(RoundedCornerShape(3.dp))
@@ -212,7 +213,7 @@ fun VolumeIconWithGlow(
                         if (isMuted || currentVolume == 0)
                             listOf(Color(0xFFEF4444).copy(0.3f), Color.Transparent)
                         else
-                            listOf(Color(0xFF6366F1).copy(0.3f), Color.Transparent)
+                            listOf(HotstarBlue.copy(0.3f), Color.Transparent)
                     )
                 )
         )
@@ -226,7 +227,7 @@ fun VolumeIconWithGlow(
                         if (isMuted || currentVolume == 0)
                             listOf(Color(0xFFEF4444).copy(0.3f), Color(0xFFDC2626).copy(0.3f))
                         else
-                            listOf(Color(0xFF6366F1).copy(0.3f), Color(0xFF8B5CF6).copy(0.3f))
+                            listOf(HotstarBlue.copy(0.3f), HotstarPink.copy(0.3f))
                     )
                 )
                 .border(
@@ -235,7 +236,7 @@ fun VolumeIconWithGlow(
                         if (isMuted || currentVolume == 0)
                             listOf(Color(0xFFEF4444).copy(0.6f), Color(0xFFDC2626).copy(0.6f))
                         else
-                            listOf(Color(0xFF6366F1).copy(0.6f), Color(0xFF8B5CF6).copy(0.6f))
+                            listOf(HotstarBlue.copy(0.6f), HotstarPink.copy(0.6f))
                     ),
                     CircleShape
                 ),
@@ -275,7 +276,7 @@ fun CircularVolumeIndicator(
                     if (isMuted)
                         listOf(Color(0xFFEF4444), Color(0xFFDC2626), Color(0xFFEF4444))
                     else
-                        listOf(Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFF6366F1))
+                        listOf(HotstarBlue, HotstarPink, HotstarPinkSoft, HotstarBlue)
                 ),
                 startAngle = 135f,
                 sweepAngle = sweep,
@@ -287,7 +288,7 @@ fun CircularVolumeIndicator(
                 val angle = (135f + sweep) * PI / 180f
                 val cx = center.x + radius * cos(angle).toFloat()
                 val cy = center.y + radius * sin(angle).toFloat()
-                drawCircle(if (isMuted) Color(0xFFEF4444) else Color(0xFF8B5CF6), stroke / 2, Offset(cx, cy))
+                drawCircle(if (isMuted) Color(0xFFEF4444) else HotstarPink, stroke / 2, Offset(cx, cy))
             }
         }
 
@@ -295,10 +296,10 @@ fun CircularVolumeIndicator(
             modifier = Modifier
                 .size(size * 0.5f)
                 .clip(CircleShape)
-                .background(Color(0xFF2A2A3E))
+                .background(SurfaceCard)
                 .border(
                     1.5.dp,
-                    if (isMuted) Color(0xFFEF4444).copy(0.5f) else Color(0xFF6366F1).copy(0.5f),
+                    if (isMuted) Color(0xFFEF4444).copy(0.5f) else HotstarBlue.copy(0.5f),
                     CircleShape
                 ),
             contentAlignment = Alignment.Center

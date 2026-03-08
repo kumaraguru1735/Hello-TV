@@ -4,6 +4,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,7 +28,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,14 +45,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.shadow.hellotv.model.ChannelItem
+import com.shadow.hellotv.model.Category
+import com.shadow.hellotv.model.Channel
+import com.shadow.hellotv.model.Language
+import com.shadow.hellotv.ui.theme.*
 
 @Composable
 fun ChannelListSidebar(
-    channels: List<ChannelItem>,
+    channels: List<Channel>,
     selectedChannelIndex: Int,
     onChannelSelected: (Int) -> Unit,
     listState: LazyListState,
+    categories: List<Category> = emptyList(),
+    languages: List<Language> = emptyList(),
+    selectedCategoryId: Int? = null,
+    selectedLanguageId: Int? = null,
+    onCategorySelected: (Int?) -> Unit = {},
+    onLanguageSelected: (Int?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -61,11 +72,9 @@ fun ChannelListSidebar(
             .shadow(
                 elevation = 32.dp,
                 shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-                spotColor = Color(0xFF6366F1).copy(alpha = 0.4f)
+                spotColor = HotstarBlue.copy(alpha = 0.4f)
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
     ) {
         Box(
@@ -74,9 +83,9 @@ fun ChannelListSidebar(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF0F0F1E),
-                            Color(0xFF1A1A2E),
-                            Color(0xFF0F0F1E)
+                            SurfaceDark,
+                            SurfaceCard,
+                            SurfaceDark
                         )
                     )
                 )
@@ -84,9 +93,9 @@ fun ChannelListSidebar(
                     width = 1.dp,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF6366F1).copy(alpha = 0.3f),
-                            Color(0xFF8B5CF6).copy(alpha = 0.3f),
-                            Color(0xFFEC4899).copy(alpha = 0.3f)
+                            HotstarBlue.copy(alpha = 0.3f),
+                            HotstarPink.copy(alpha = 0.2f),
+                            HotstarBlue.copy(alpha = 0.3f)
                         )
                     ),
                     shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
@@ -98,9 +107,7 @@ fun ChannelListSidebar(
                     .padding(if (isTV) 28.dp else 20.dp)
             ) {
                 // Header
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Channels",
                         color = Color.White,
@@ -108,18 +115,38 @@ fun ChannelListSidebar(
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.5.sp
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
                         text = "${channels.size} available",
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = TextMuted,
                         fontSize = if (isTV) 15.sp else 14.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
 
-                Spacer(modifier = Modifier.height(if (isTV) 24.dp else 20.dp))
+                Spacer(modifier = Modifier.height(if (isTV) 20.dp else 16.dp))
+
+                // Category filter chips
+                if (categories.isNotEmpty()) {
+                    FilterChipsRow(
+                        items = categories.map { it.id to it.name },
+                        selectedId = selectedCategoryId,
+                        onSelected = onCategorySelected,
+                        isTV = isTV
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Language filter chips
+                if (languages.isNotEmpty()) {
+                    FilterChipsRow(
+                        items = languages.map { it.id to it.name },
+                        selectedId = selectedLanguageId,
+                        onSelected = onLanguageSelected,
+                        isTV = isTV
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 // Search box (decorative)
                 Box(
@@ -127,12 +154,8 @@ fun ChannelListSidebar(
                         .fillMaxWidth()
                         .height(if (isTV) 54.dp else 48.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -143,26 +166,22 @@ fun ChannelListSidebar(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color.White.copy(alpha = 0.4f),
+                            tint = TextDisabled,
                             modifier = Modifier.size(if (isTV) 24.dp else 20.dp)
                         )
                         Text(
                             text = "Search channels...",
-                            color = Color.White.copy(alpha = 0.4f),
+                            color = TextDisabled,
                             fontSize = if (isTV) 16.sp else 15.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (isTV) 20.dp else 16.dp))
+                Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
-                // Divider
-                Divider(
-                    color = Color.White.copy(alpha = 0.1f),
-                    thickness = 1.dp
-                )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.08f), thickness = 1.dp)
 
-                Spacer(modifier = Modifier.height(if (isTV) 20.dp else 16.dp))
+                Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
                 // Channel list
                 LazyColumn(
@@ -178,9 +197,7 @@ fun ChannelListSidebar(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .animateContentSize()
-                                .clickable {
-                                    onChannelSelected(index)
-                                }
+                                .clickable { onChannelSelected(index) }
                         )
                     }
                 }
@@ -190,8 +207,73 @@ fun ChannelListSidebar(
 }
 
 @Composable
+private fun FilterChipsRow(
+    items: List<Pair<Int, String>>,
+    selectedId: Int?,
+    onSelected: (Int?) -> Unit,
+    isTV: Boolean
+) {
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // All chip
+        FilterChip(
+            text = "All",
+            isSelected = selectedId == null,
+            onClick = { onSelected(null) },
+            isTV = isTV
+        )
+
+        items.forEach { (id, name) ->
+            FilterChip(
+                text = name,
+                isSelected = selectedId == id,
+                onClick = { onSelected(if (selectedId == id) null else id) },
+                isTV = isTV
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    isTV: Boolean
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                if (isSelected) Brush.horizontalGradient(listOf(HotstarBlue, GradientBlueEnd))
+                else Brush.horizontalGradient(listOf(Color.White.copy(0.08f), Color.White.copy(0.06f)))
+            )
+            .then(
+                if (!isSelected) Modifier.border(1.dp, Color.White.copy(0.15f), RoundedCornerShape(20.dp))
+                else Modifier
+            )
+            .clickable { onClick() }
+            .padding(horizontal = if (isTV) 14.dp else 12.dp, vertical = if (isTV) 7.dp else 6.dp)
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) Color.White else TextMuted,
+            fontSize = if (isTV) 12.sp else 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
 fun ChannelListItemComposable(
-    channel: ChannelItem,
+    channel: Channel,
     channelNumber: Int,
     isSelected: Boolean,
     isTV: Boolean,
@@ -202,14 +284,10 @@ fun ChannelListItemComposable(
             .shadow(
                 elevation = if (isSelected) 12.dp else 2.dp,
                 shape = RoundedCornerShape(16.dp),
-                spotColor = if (isSelected) Color(0xFF6366F1).copy(alpha = 0.5f) else Color.Transparent
+                spotColor = if (isSelected) HotstarBlue.copy(alpha = 0.5f) else Color.Transparent
             ),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                Color.Transparent
-            } else {
-                Color.White.copy(alpha = 0.05f)
-            }
+            containerColor = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.04f)
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -220,22 +298,17 @@ fun ChannelListItemComposable(
                     if (isSelected) {
                         Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF6366F1).copy(alpha = 0.3f),
-                                Color(0xFF8B5CF6).copy(alpha = 0.3f)
+                                HotstarBlue.copy(alpha = 0.25f),
+                                HotstarPink.copy(alpha = 0.15f)
                             )
                         )
                     } else {
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent
-                            )
-                        )
+                        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
                     }
                 )
                 .border(
                     width = if (isSelected) 1.5.dp else 0.dp,
-                    color = if (isSelected) Color(0xFF6366F1).copy(alpha = 0.6f) else Color.Transparent,
+                    color = if (isSelected) HotstarBlue.copy(alpha = 0.5f) else Color.Transparent,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(if (isTV) 16.dp else 14.dp)
@@ -251,18 +324,10 @@ fun ChannelListItemComposable(
                         .clip(CircleShape)
                         .background(
                             if (isSelected) {
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF6366F1),
-                                        Color(0xFF8B5CF6)
-                                    )
-                                )
+                                Brush.linearGradient(listOf(HotstarBlue, HotstarPink))
                             } else {
                                 Brush.linearGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.15f),
-                                        Color.White.copy(alpha = 0.1f)
-                                    )
+                                    listOf(Color.White.copy(0.12f), Color.White.copy(0.08f))
                                 )
                             }
                         ),
@@ -281,19 +346,17 @@ fun ChannelListItemComposable(
                     modifier = Modifier
                         .size(if (isTV) 56.dp else 52.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF2A2A3E))
+                        .background(SurfaceElevated)
                         .border(
                             width = 1.5.dp,
-                            color = if (isSelected)
-                                Color(0xFF6366F1).copy(alpha = 0.5f)
-                            else
-                                Color.White.copy(alpha = 0.1f),
+                            color = if (isSelected) HotstarBlue.copy(0.5f)
+                            else Color.White.copy(0.08f),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = channel.logo,
+                        model = channel.image,
                         contentDescription = "Channel Logo",
                         modifier = Modifier
                             .size(if (isTV) 48.dp else 44.dp)
@@ -301,11 +364,11 @@ fun ChannelListItemComposable(
                         contentScale = ContentScale.Crop
                     )
 
-                    if (channel.logo.isEmpty()) {
+                    if (channel.image.isEmpty()) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.4f),
+                            tint = TextDisabled,
                             modifier = Modifier.size(if (isTV) 24.dp else 22.dp)
                         )
                     }
@@ -325,13 +388,10 @@ fun ChannelListItemComposable(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    if (channel.category.isNotEmpty()) {
+                    if (channel.description.isNotEmpty()) {
                         Text(
-                            text = channel.category.uppercase(),
-                            color = if (isSelected)
-                                Color.White.copy(alpha = 0.8f)
-                            else
-                                Color.White.copy(alpha = 0.5f),
+                            text = channel.description.uppercase(),
+                            color = if (isSelected) TextSecondary else TextMuted,
                             fontSize = if (isTV) 12.sp else 11.sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 0.5.sp,
@@ -342,23 +402,19 @@ fun ChannelListItemComposable(
                 }
 
                 // DRM indicator
-                if (!channel.drmUrl.isNullOrEmpty()) {
+                if (!channel.drmLicenceUrl.isNullOrEmpty()) {
                     Box(
                         modifier = Modifier
                             .size(if (isTV) 32.dp else 30.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFFBBF24).copy(alpha = 0.2f))
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFFBBF24).copy(alpha = 0.5f),
-                                shape = CircleShape
-                            ),
+                            .background(StatusWarning.copy(alpha = 0.15f))
+                            .border(1.dp, StatusWarning.copy(alpha = 0.4f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "DRM Protected",
-                            tint = Color(0xFFFBBF24),
+                            tint = StatusWarning,
                             modifier = Modifier.size(if (isTV) 16.dp else 15.dp)
                         )
                     }
