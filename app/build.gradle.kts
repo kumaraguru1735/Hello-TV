@@ -1,8 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization) // Added for kotlinx.serialization
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -56,6 +57,14 @@ dependencies {
     implementation(libs.androidx.media3.datasource.rtmp)
     // https://mvnrepository.com/artifact/io.coil-kt.coil3/coil
     implementation(libs.coil.compose)
+
+    // Room database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // ViewModel Compose
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // material for tv
     implementation(libs.androidx.tv.foundation)
