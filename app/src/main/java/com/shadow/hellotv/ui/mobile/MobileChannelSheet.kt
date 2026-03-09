@@ -60,7 +60,7 @@ fun MobileChannelSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF0D1B2A),
+        containerColor = SurfacePrimary,
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -68,7 +68,7 @@ fun MobileChannelSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.2f))
+                    .background(TextMuted)
             )
         }
     ) {
@@ -82,27 +82,27 @@ fun MobileChannelSheet(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                cursorBrush = SolidColor(HotstarBlue),
+                cursorBrush = SolidColor(AccentGold),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.06f))
+                    .background(SurfaceInput)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 decorationBox = { innerTextField ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Search, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Search, null, tint = TextMuted, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Box(Modifier.weight(1f)) {
                             if (searchQuery.isEmpty()) {
-                                Text("Search channels...", color = Color.White.copy(alpha = 0.3f), fontSize = 14.sp)
+                                Text("Search channels...", color = TextMuted, fontSize = 14.sp)
                             }
                             innerTextField()
                         }
                         if (searchQuery.isNotEmpty()) {
                             Icon(
                                 Icons.Default.Clear, null,
-                                tint = Color.White.copy(alpha = 0.4f),
+                                tint = TextMuted,
                                 modifier = Modifier.size(18.dp).clickable { searchQuery = "" }
                             )
                         }
@@ -143,7 +143,7 @@ fun MobileChannelSheet(
                         modifier = Modifier
                             .width(90.dp)
                             .fillMaxHeight()
-                            .background(Color.White.copy(alpha = 0.03f)),
+                            .background(SurfaceDark),
                         contentPadding = PaddingValues(vertical = 4.dp)
                     ) {
                         item {
@@ -174,7 +174,7 @@ fun MobileChannelSheet(
                     item {
                         Text(
                             "${filteredChannels.size} channels",
-                            color = Color.White.copy(alpha = 0.3f),
+                            color = TextMuted,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                         )
@@ -204,15 +204,15 @@ private fun LanguageChip(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .background(
-                if (selected) HotstarBlue
-                else Color.White.copy(alpha = 0.06f)
+                if (selected) AccentGold
+                else SurfaceInput
             )
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             label,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+            color = if (selected) Color.Black else TextSecondary,
             fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
@@ -229,7 +229,7 @@ private fun CategoryItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (selected) HotstarBlue.copy(alpha = 0.15f) else Color.Transparent
+                if (selected) AccentGold.copy(alpha = 0.15f) else Color.Transparent
             )
             .clickable { onClick() }
             .padding(horizontal = 8.dp, vertical = 10.dp),
@@ -242,12 +242,12 @@ private fun CategoryItem(
                         .width(3.dp)
                         .height(16.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(HotstarBlue)
+                        .background(AccentGold)
                 )
             }
             Text(
                 name,
-                color = if (selected) HotstarBlueLight else Color.White.copy(alpha = 0.5f),
+                color = if (selected) AccentGoldLight else TextSecondary,
                 fontSize = 11.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 2,
@@ -269,7 +269,7 @@ private fun ChannelRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (isSelected) HotstarBlue.copy(alpha = 0.1f)
+                if (isSelected) AccentGold.copy(alpha = 0.1f)
                 else Color.Transparent
             )
             .clickable { onClick() }
@@ -279,7 +279,7 @@ private fun ChannelRow(
         // Channel number
         Text(
             channel.channelNo.toString(),
-            color = if (isSelected) HotstarBlue else Color.White.copy(alpha = 0.3f),
+            color = if (isSelected) AccentGold else TextMuted,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.width(28.dp),
@@ -294,17 +294,17 @@ private fun ChannelRow(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
+                    .background(SurfaceCard)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.05f)),
+                    .background(SurfaceCard),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(18.dp))
             }
         }
 
@@ -313,7 +313,7 @@ private fun ChannelRow(
         // Name
         Text(
             channel.name,
-            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.8f),
+            color = if (isSelected) TextPrimary else TextSecondary,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,

@@ -74,7 +74,7 @@ fun ChannelChangeOverlay(
                             end = if (isTV) 48.dp else if (isTablet) 32.dp else 16.dp,
                             bottom = if (isTV) 48.dp else if (isTablet) 36.dp else 24.dp
                         )
-                        .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = HotstarBlue.copy(0.3f)),
+                        .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = AccentGold.copy(0.3f)),
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                     shape = RoundedCornerShape(24.dp)
                 ) {
@@ -88,7 +88,7 @@ fun ChannelChangeOverlay(
                             .border(
                                 1.5.dp,
                                 Brush.linearGradient(
-                                    listOf(HotstarBlue.copy(0.4f), HotstarPink.copy(0.4f))
+                                    listOf(AccentGold.copy(0.4f), GradientGoldEnd.copy(0.3f))
                                 ),
                                 RoundedCornerShape(24.dp)
                             )
@@ -106,7 +106,7 @@ fun ChannelChangeOverlay(
                                     .size(if (isTV) 72.dp else if (isTablet) 64.dp else 56.dp)
                                     .clip(RoundedCornerShape(16.dp))
                                     .background(
-                                        Brush.linearGradient(listOf(HotstarBlue, GradientBlueEnd))
+                                        Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
                                     )
                                     .border(2.dp, Color.White.copy(0.3f), RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
@@ -117,14 +117,14 @@ fun ChannelChangeOverlay(
                                 ) {
                                     Text(
                                         text = "${selectedChannelIndex + 1}",
-                                        color = Color.White,
+                                        color = Color.Black,
                                         fontSize = if (isTV) 24.sp else if (isTablet) 22.sp else 20.sp,
                                         fontWeight = FontWeight.Black,
                                         letterSpacing = 0.5.sp
                                     )
                                     Text(
                                         text = "CH",
-                                        color = Color.White.copy(0.8f),
+                                        color = Color.Black.copy(0.7f),
                                         fontSize = if (isTV) 10.sp else 9.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 1.sp
@@ -143,7 +143,7 @@ fun ChannelChangeOverlay(
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(
                                             Brush.radialGradient(
-                                                listOf(HotstarBlue.copy(0.3f), Color.Transparent)
+                                                listOf(AccentGold.copy(0.2f), Color.Transparent)
                                             )
                                         )
                                 )
@@ -155,7 +155,7 @@ fun ChannelChangeOverlay(
                                         .border(
                                             2.dp,
                                             Brush.linearGradient(
-                                                listOf(HotstarBlue.copy(0.5f), HotstarPink.copy(0.3f))
+                                                listOf(AccentGold.copy(0.5f), GradientGoldEnd.copy(0.3f))
                                             ),
                                             RoundedCornerShape(16.dp)
                                         ),
@@ -192,7 +192,7 @@ fun ChannelChangeOverlay(
                                 ) {
                                     Text(
                                         text = channel.name,
-                                        color = Color.White,
+                                        color = TextPrimary,
                                         fontSize = if (isTV) 26.sp else if (isTablet) 22.sp else 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
@@ -245,10 +245,10 @@ fun ChannelChangeOverlay(
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .background(
                                                     Brush.horizontalGradient(
-                                                        listOf(HotstarBlue.copy(0.2f), HotstarPink.copy(0.2f))
+                                                        listOf(AccentGold.copy(0.15f), GradientGoldEnd.copy(0.1f))
                                                     )
                                                 )
-                                                .border(1.dp, HotstarBlue.copy(0.3f), RoundedCornerShape(8.dp))
+                                                .border(1.dp, AccentGold.copy(0.3f), RoundedCornerShape(8.dp))
                                                 .padding(
                                                     horizontal = if (isTV) 12.dp else 10.dp,
                                                     vertical = if (isTV) 5.dp else 4.dp
@@ -306,7 +306,7 @@ fun ChannelChangeOverlay(
                                         .fillMaxWidth()
                                         .height(if (isTV) 4.dp else 3.dp)
                                         .clip(RoundedCornerShape(2.dp)),
-                                    color = HotstarBlue,
+                                    color = AccentGold,
                                     trackColor = Color.White.copy(0.1f)
                                 )
                             }

@@ -108,7 +108,7 @@ fun PlayerSettingsPanel(
                 .shadow(
                     24.dp,
                     RoundedCornerShape(24.dp),
-                    spotColor = HotstarBlue.copy(0.3f)
+                    spotColor = AccentGold.copy(0.3f)
                 ),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             shape = RoundedCornerShape(24.dp)
@@ -119,9 +119,9 @@ fun PlayerSettingsPanel(
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                SurfaceDark.copy(0.97f),
+                                SurfacePrimary.copy(0.97f),
                                 SurfaceCard.copy(0.97f),
-                                SurfaceDark.copy(0.97f)
+                                SurfacePrimary.copy(0.97f)
                             )
                         )
                     )
@@ -129,9 +129,9 @@ fun PlayerSettingsPanel(
                         1.dp,
                         Brush.verticalGradient(
                             listOf(
-                                HotstarBlue.copy(0.3f),
-                                HotstarPink.copy(0.2f),
-                                HotstarBlue.copy(0.3f)
+                                AccentGold.copy(0.3f),
+                                GradientGoldEnd.copy(0.2f),
+                                AccentGold.copy(0.3f)
                             )
                         ),
                         RoundedCornerShape(24.dp)
@@ -143,7 +143,7 @@ fun PlayerSettingsPanel(
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ── Profile Section ──
+                    // -- Profile Section --
                     item {
                         if (subscriber != null) {
                             ProfileSection(
@@ -157,7 +157,7 @@ fun PlayerSettingsPanel(
                         }
                     }
 
-                    // ── Now Playing ──
+                    // -- Now Playing --
                     item {
                         if (channel != null) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -169,7 +169,7 @@ fun PlayerSettingsPanel(
                         }
                     }
 
-                    // ── Video Quality ──
+                    // -- Video Quality --
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
                         SectionHeader("Video Quality", Icons.Default.HighQuality)
@@ -229,7 +229,7 @@ fun PlayerSettingsPanel(
 
                     item { SettingsDivider() }
 
-                    // ── Audio Track ──
+                    // -- Audio Track --
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
                         SectionHeader("Audio", Icons.Default.Audiotrack)
@@ -271,7 +271,7 @@ fun PlayerSettingsPanel(
                         }
                     }
 
-                    // ── Subtitles ──
+                    // -- Subtitles --
                     if (subtitleTracks.isNotEmpty()) {
                         item { SettingsDivider() }
                         item {
@@ -310,7 +310,7 @@ fun PlayerSettingsPanel(
 
                     item { SettingsDivider() }
 
-                    // ── Account Actions ──
+                    // -- Account Actions --
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
                         SectionHeader("Account", Icons.Default.ManageAccounts)
@@ -338,7 +338,7 @@ fun PlayerSettingsPanel(
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "← to close | ↑↓ navigate",
+                            text = "\u2190 to close | \u2191\u2193 navigate",
                             color = TextDisabled,
                             fontSize = 11.sp,
                             textAlign = TextAlign.Center,
@@ -369,14 +369,14 @@ private fun ProfileSection(
                 .size(if (isTV) 56.dp else 48.dp)
                 .clip(CircleShape)
                 .background(
-                    Brush.linearGradient(listOf(HotstarBlue, HotstarPink))
+                    Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
                 )
-                .border(2.dp, HotstarBlue.copy(0.5f), CircleShape),
+                .border(2.dp, AccentGold.copy(0.5f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = subscriber.name.firstOrNull()?.uppercase() ?: "U",
-                color = Color.White,
+                color = Color.Black,
                 fontSize = if (isTV) 24.sp else 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -385,7 +385,7 @@ private fun ProfileSection(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = subscriber.name,
-                color = Color.White,
+                color = TextPrimary,
                 fontSize = if (isTV) 18.sp else 16.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -429,14 +429,14 @@ private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(HotstarBlue.copy(0.1f))
-            .border(1.dp, HotstarBlue.copy(0.2f), RoundedCornerShape(14.dp))
+            .background(AccentGold.copy(0.1f))
+            .border(1.dp, AccentGold.copy(0.2f), RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = channel.name,
-                color = Color.White,
+                color = TextPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -450,7 +450,7 @@ private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
                 // Stream type badge
                 SettingsBadge(
                     text = channel.streamType.uppercase(),
-                    color = HotstarBlue
+                    color = AccentGold
                 )
 
                 // DRM badge
@@ -465,7 +465,7 @@ private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
                 if (channel.premium == 1) {
                     SettingsBadge(
                         text = "PREMIUM",
-                        color = HotstarPink
+                        color = AccentGold
                     )
                 }
             }
@@ -482,12 +482,12 @@ private fun SectionHeader(title: String, icon: ImageVector) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = HotstarBlue,
+            tint = AccentGold,
             modifier = Modifier.size(18.dp)
         )
         Text(
             text = title,
-            color = Color.White,
+            color = AccentGold,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp
@@ -498,7 +498,7 @@ private fun SectionHeader(title: String, icon: ImageVector) {
 @Composable
 private fun SettingsDivider() {
     HorizontalDivider(
-        color = Color.White.copy(0.08f),
+        color = SurfaceSeparator,
         thickness = 1.dp,
         modifier = Modifier.padding(vertical = 4.dp)
     )
@@ -539,16 +539,16 @@ fun TrackOptionItem(
             .clip(RoundedCornerShape(12.dp))
             .background(
                 when {
-                    isSelected -> HotstarBlue.copy(0.15f)
-                    isFocused -> Color.White.copy(0.08f)
+                    isSelected -> AccentGold.copy(0.15f)
+                    isFocused -> AccentGold.copy(0.08f)
                     else -> Color.Transparent
                 }
             )
             .then(
                 if (isSelected) {
-                    Modifier.border(1.dp, HotstarBlue.copy(0.3f), RoundedCornerShape(12.dp))
+                    Modifier.border(1.dp, AccentGold.copy(0.3f), RoundedCornerShape(12.dp))
                 } else if (isFocused) {
-                    Modifier.border(1.dp, Color.White.copy(0.2f), RoundedCornerShape(12.dp))
+                    Modifier.border(1.dp, AccentGold.copy(0.2f), RoundedCornerShape(12.dp))
                 } else Modifier
             )
             .clickable { onClick() }
@@ -565,7 +565,7 @@ fun TrackOptionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
-                    color = if (isSelected) HotstarBlueLight else Color.White,
+                    color = if (isSelected) AccentGoldLight else TextPrimary,
                     fontSize = 14.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 )
@@ -584,7 +584,7 @@ fun TrackOptionItem(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Selected",
-                    tint = HotstarBlue,
+                    tint = AccentGold,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -602,7 +602,7 @@ private fun SettingsActionItem(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    val accentColor = if (isDanger) StatusLive else HotstarBlue
+    val accentColor = if (isDanger) StatusLive else AccentGold
 
     Box(
         modifier = Modifier
@@ -632,7 +632,7 @@ private fun SettingsActionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
-                    color = if (isDanger && isFocused) accentColor else Color.White,
+                    color = if (isDanger && isFocused) accentColor else TextPrimary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -652,7 +652,7 @@ private fun SettingsActionItem(
     }
 }
 
-// ── Track extraction helpers ──
+// -- Track extraction helpers --
 
 private fun extractTracks(tracks: Tracks, trackType: Int): List<TrackInfo> {
     val result = mutableListOf<TrackInfo>()

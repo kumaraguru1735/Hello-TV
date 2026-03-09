@@ -31,8 +31,6 @@ import androidx.compose.ui.unit.sp
 import com.shadow.hellotv.model.SessionInfo
 import com.shadow.hellotv.ui.theme.*
 
-private val Indigo = Color(0xFF6366F1)
-
 @Composable
 fun SessionKickoutScreen(
     sessions: List<SessionInfo>,
@@ -49,14 +47,14 @@ fun SessionKickoutScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF080C18))
+            .background(SurfaceDark)
     ) {
         // Ambient glow
         Box(
             modifier = Modifier
                 .size(400.dp)
                 .offset(x = (-100).dp, y = (-100).dp)
-                .background(Brush.radialGradient(listOf(StatusWarning.copy(alpha = 0.06f), Color.Transparent)))
+                .background(Brush.radialGradient(listOf(AccentGold.copy(alpha = 0.06f), Color.Transparent)))
         )
 
         Column(
@@ -75,12 +73,12 @@ fun SessionKickoutScreen(
                     modifier = Modifier
                         .size(if (isCompact) 36.dp else 48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(StatusWarning.copy(alpha = 0.12f)),
+                        .background(AccentGoldSoft),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Devices, null,
-                        tint = StatusWarning,
+                        tint = AccentGold,
                         modifier = Modifier.size(if (isCompact) 20.dp else 28.dp)
                     )
                 }
@@ -88,13 +86,13 @@ fun SessionKickoutScreen(
                 Column {
                     Text(
                         "Device Limit Reached",
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = if (isCompact) 16.sp else 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         "Replace a device to continue on this one",
-                        color = Color.White.copy(alpha = 0.4f),
+                        color = TextMuted,
                         fontSize = if (isCompact) 11.sp else 13.sp
                     )
                 }
@@ -124,7 +122,7 @@ fun SessionKickoutScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = HotstarBlue)
+                    CircularProgressIndicator(color = AccentGold)
                 }
             } else {
                 // Device grid
@@ -151,13 +149,10 @@ fun SessionKickoutScreen(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (logoutFocused) Color.White.copy(alpha = 0.1f)
-                        else Color.White.copy(alpha = 0.04f)
-                    )
+                    .background(if (logoutFocused) StatusLive.copy(alpha = 0.12f) else Color.Transparent)
                     .border(
                         1.dp,
-                        if (logoutFocused) Color.White.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.08f),
+                        if (logoutFocused) StatusLive.copy(alpha = 0.6f) else StatusLive.copy(alpha = 0.2f),
                         RoundedCornerShape(10.dp)
                     )
                     .onFocusChanged { logoutFocused = it.isFocused }
@@ -173,12 +168,13 @@ fun SessionKickoutScreen(
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Logout, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Logout, null, tint = if (logoutFocused) StatusLive else StatusLive.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "Sign Out Instead",
-                        color = Color.White.copy(alpha = if (logoutFocused) 0.8f else 0.5f),
-                        fontSize = 13.sp
+                        color = if (logoutFocused) StatusLive else StatusLive.copy(alpha = 0.6f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -206,17 +202,17 @@ private fun DeviceCard(
             .shadow(
                 if (isFocused) 12.dp else 0.dp,
                 RoundedCornerShape(16.dp),
-                spotColor = HotstarBlue.copy(alpha = 0.3f)
+                spotColor = AccentGold.copy(alpha = 0.3f)
             )
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF131B2E), Color(0xFF0F1724))
+                    listOf(SurfaceElevated, SurfacePrimary)
                 )
             )
             .border(
                 if (isFocused) 1.5.dp else 1.dp,
-                if (isFocused) HotstarBlue else Color.White.copy(alpha = 0.06f),
+                if (isFocused) AccentGold else SurfaceSeparator,
                 RoundedCornerShape(16.dp)
             )
             .onFocusChanged { isFocused = it.isFocused }
@@ -238,16 +234,16 @@ private fun DeviceCard(
                     modifier = Modifier
                         .size(if (isCompact) 34.dp else 42.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(HotstarBlue.copy(alpha = 0.12f)),
+                        .background(AccentGoldSoft),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, null, tint = HotstarBlue, modifier = Modifier.size(if (isCompact) 18.dp else 22.dp))
+                    Icon(icon, null, tint = AccentGold, modifier = Modifier.size(if (isCompact) 18.dp else 22.dp))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         session.deviceName.ifEmpty { session.deviceModel },
-                        color = Color.White,
+                        color = TextPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = if (isCompact) 13.sp else 15.sp,
                         maxLines = 1,
@@ -255,7 +251,7 @@ private fun DeviceCard(
                     )
                     Text(
                         session.deviceModel,
-                        color = Color.White.copy(alpha = 0.35f),
+                        color = TextMuted,
                         fontSize = if (isCompact) 10.sp else 12.sp,
                         maxLines = 1
                     )
@@ -278,17 +274,17 @@ private fun DeviceCard(
                     .clip(RoundedCornerShape(8.dp))
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0xFFEF4444), Color(0xFFDC2626))
+                            listOf(GradientGoldStart, GradientGoldEnd)
                         )
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.SwapHoriz, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.SwapHoriz, null, tint = Color.Black, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(
                         "Replace This Device",
-                        color = Color.White,
+                        color = Color.Black,
                         fontSize = if (isCompact) 11.sp else 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -306,7 +302,7 @@ private fun InfoRow(label: String, value: String, isCompact: Boolean) {
             .padding(vertical = if (isCompact) 1.dp else 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.3f), fontSize = if (isCompact) 10.sp else 12.sp)
-        Text(value, color = Color.White.copy(alpha = 0.6f), fontSize = if (isCompact) 10.sp else 12.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = TextMuted, fontSize = if (isCompact) 10.sp else 12.sp)
+        Text(value, color = TextSecondary, fontSize = if (isCompact) 10.sp else 12.sp, fontWeight = FontWeight.Medium)
     }
 }

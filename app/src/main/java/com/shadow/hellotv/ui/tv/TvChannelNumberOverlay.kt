@@ -1,6 +1,7 @@
 package com.shadow.hellotv.ui.tv
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -22,14 +23,15 @@ fun TvChannelNumberOverlay(
         modifier = modifier
             .padding(top = 24.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceCard.copy(alpha = 0.9f))
+            .background(TvSurfaceCard.copy(alpha = 0.95f))
+            .border(1.dp, AccentGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Go to Channel", color = TextMuted, fontSize = 11.sp)
+            Text("Go to Channel", color = TextSecondary, fontSize = 11.sp)
             Text(
                 input,
-                color = HotstarBlueLight,
+                color = AccentGold,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             )

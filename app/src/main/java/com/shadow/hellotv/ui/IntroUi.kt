@@ -43,7 +43,7 @@ fun IntroUi(
                 Brush.verticalGradient(
                     colors = listOf(
                         SurfaceDark,
-                        HotstarNavy,
+                        SurfacePrimary,
                         SurfaceDark
                     )
                 )
@@ -123,7 +123,7 @@ fun ErrorContent(
             .size(100.dp)
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(StatusLive, HotstarPink)
+                    colors = listOf(StatusLive, GradientGoldEnd)
                 ),
                 shape = androidx.compose.foundation.shape.CircleShape
             ),
@@ -177,7 +177,7 @@ fun ErrorContent(
             .width(200.dp)
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = HotstarBlue
+            containerColor = AccentGold
         ),
         shape = RoundedCornerShape(28.dp),
         elevation = ButtonDefaults.buttonElevation(
@@ -188,7 +188,7 @@ fun ErrorContent(
         Icon(
             imageVector = Icons.Default.Refresh,
             contentDescription = "Retry",
-            tint = Color.White,
+            tint = Color.Black,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -196,7 +196,7 @@ fun ErrorContent(
             text = "Try Again",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color.Black
         )
     }
 
@@ -246,10 +246,10 @@ fun AnimatedTVLogo() {
                 drawCircle(
                     brush = Brush.sweepGradient(
                         colors = listOf(
-                            HotstarBlue,
-                            HotstarPink,
-                            HotstarBlueLight,
-                            HotstarBlue
+                            AccentGold,
+                            GradientGoldEnd,
+                            AccentGoldLight,
+                            AccentGold
                         )
                     ),
                     radius = radius * scale,
@@ -288,7 +288,7 @@ fun AnimatedTVLogo() {
             drawPath(
                 path = playPath,
                 brush = Brush.linearGradient(
-                    colors = listOf(HotstarBlue, HotstarPink)
+                    colors = listOf(AccentGold, GradientGoldEnd)
                 )
             )
         }
@@ -323,10 +323,10 @@ fun AnimatedCircularProgress() {
         drawArc(
             brush = Brush.sweepGradient(
                 colors = listOf(
-                    HotstarBlue,
-                    HotstarPink,
-                    HotstarBlueLight,
-                    HotstarBlue
+                    AccentGold,
+                    GradientGoldEnd,
+                    AccentGoldLight,
+                    AccentGold
                 )
             ),
             startAngle = -90f,
@@ -401,7 +401,7 @@ fun AnimatedBackgroundParticles() {
             val y = centerY + (sin(angle) * radius).toFloat()
 
             drawCircle(
-                color = HotstarBlue.copy(alpha = 0.1f),
+                color = AccentGold.copy(alpha = 0.1f),
                 radius = 4f,
                 center = Offset(x, y)
             )
@@ -414,7 +414,7 @@ fun AnimatedBackgroundParticles() {
             val y = centerY + (sin(angle) * radius).toFloat()
 
             drawCircle(
-                color = HotstarPink.copy(alpha = 0.08f),
+                color = GradientGoldEnd.copy(alpha = 0.08f),
                 radius = 6f,
                 center = Offset(x, y)
             )

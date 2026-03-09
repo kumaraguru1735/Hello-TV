@@ -43,8 +43,6 @@ import com.shadow.hellotv.LocalIsTv
 import com.shadow.hellotv.ui.theme.*
 import kotlin.system.exitProcess
 
-private val Indigo = Color(0xFF6366F1)
-
 @Composable
 fun ExitDialog(
     showExitDialog: Boolean,
@@ -114,11 +112,11 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
         Box(
             modifier = Modifier
                 .then(cardWidth)
-                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFFEF4444).copy(alpha = 0.2f))
+                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = StatusLive.copy(alpha = 0.2f))
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF131B2E), Color(0xFF0F1724))
+                        listOf(SurfaceCard, SurfaceDark)
                     )
                 )
                 .border(
@@ -147,21 +145,21 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
                         .background(
                             Brush.radialGradient(
                                 listOf(
-                                    Color(0xFFEF4444).copy(alpha = 0.2f),
-                                    Color(0xFFEF4444).copy(alpha = 0.05f)
+                                    StatusLive.copy(alpha = 0.2f),
+                                    StatusLive.copy(alpha = 0.05f)
                                 )
                             )
                         )
                         .border(
                             1.5.dp,
-                            Color(0xFFEF4444).copy(alpha = 0.3f),
+                            StatusLive.copy(alpha = 0.3f),
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Warning, null,
-                        tint = Color(0xFFEF4444),
+                        tint = StatusLive,
                         modifier = Modifier.size(iconSize * 0.5f)
                     )
                 }
@@ -170,7 +168,7 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
 
                 Text(
                     "Exit App?",
-                    color = Color.White,
+                    color = TextPrimary,
                     fontSize = if (isPortrait) 22.sp else 28.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -179,7 +177,7 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
 
                 Text(
                     "Are you sure you want to close HelloTV?",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = TextSecondary,
                     fontSize = if (isPortrait) 13.sp else 15.sp,
                     textAlign = TextAlign.Center
                 )
@@ -198,7 +196,7 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
                         focusRequester = cancelFocus,
                         onFocusChange = { cancelFocused = it },
                         isPortrait = isPortrait,
-                        colors = listOf(HotstarBlue, Indigo),
+                        colors = listOf(AccentGold, AccentGoldDark),
                         onClick = onCancel,
                         modifier = Modifier.weight(1f)
                     )
@@ -211,7 +209,7 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
                         focusRequester = exitFocus,
                         onFocusChange = { exitFocused = it },
                         isPortrait = isPortrait,
-                        colors = listOf(Color(0xFFEF4444), Color(0xFFDC2626)),
+                        colors = listOf(StatusLive, StatusLive.copy(alpha = 0.8f)),
                         onClick = ::doExit,
                         modifier = Modifier.weight(1f)
                     )
@@ -221,8 +219,8 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
                 if (isTv) {
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "← → to navigate • OK to select",
-                        color = Color.White.copy(alpha = 0.3f),
+                        "\u2190 \u2192 to navigate \u2022 OK to select",
+                        color = TextMuted,
                         fontSize = 11.sp
                     )
                 }

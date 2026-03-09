@@ -74,11 +74,11 @@ fun VolumeOverlay(
     AnimatedVisibility(
         visible = show,
         enter = fadeIn(animationSpec = tween(300)) + scaleIn(
-            initialScale = 0.8f,  // Fixed: Pass initialScale before animationSpec
+            initialScale = 0.8f,
             animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
         ),
         exit = fadeOut(animationSpec = tween(200)) + scaleOut(
-            targetScale = 0.8f,  // Fixed: Pass targetScale before animationSpec
+            targetScale = 0.8f,
             animationSpec = tween(200)
         ),
         modifier = modifier
@@ -86,7 +86,7 @@ fun VolumeOverlay(
         Card(
             modifier = Modifier
                 .padding(if (isTV) 24.dp else if (isTablet) 20.dp else 16.dp)
-                .shadow(16.dp, RoundedCornerShape(if (isTV) 20.dp else 16.dp), spotColor = HotstarBlue.copy(0.4f)),
+                .shadow(16.dp, RoundedCornerShape(if (isTV) 20.dp else 16.dp), spotColor = AccentGold.copy(0.4f)),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             shape = RoundedCornerShape(if (isTV) 20.dp else 16.dp)
         ) {
@@ -99,7 +99,7 @@ fun VolumeOverlay(
                     )
                     .border(
                         1.2.dp,
-                        Brush.linearGradient(listOf(HotstarBlue.copy(0.5f), HotstarPink.copy(0.5f))),
+                        Brush.linearGradient(listOf(AccentGold.copy(0.5f), GradientGoldEnd.copy(0.4f))),
                         RoundedCornerShape(if (isTV) 20.dp else 16.dp)
                     )
                     .padding(if (isTV) 20.dp else if (isTablet) 18.dp else 16.dp)
@@ -150,9 +150,9 @@ fun VolumeOverlay(
                                         .background(
                                             Brush.horizontalGradient(
                                                 if (isMuted || currentVolume == 0)
-                                                    listOf(Color(0xFFEF4444), Color(0xFFDC2626))
+                                                    listOf(StatusLive, StatusLive.copy(0.8f))
                                                 else
-                                                    listOf(HotstarBlue, HotstarPink)
+                                                    listOf(GradientGoldStart, GradientGoldEnd)
                                             )
                                         )
                                         .clip(RoundedCornerShape(3.dp))
@@ -211,9 +211,9 @@ fun VolumeIconWithGlow(
                 .background(
                     Brush.radialGradient(
                         if (isMuted || currentVolume == 0)
-                            listOf(Color(0xFFEF4444).copy(0.3f), Color.Transparent)
+                            listOf(StatusLive.copy(0.3f), Color.Transparent)
                         else
-                            listOf(HotstarBlue.copy(0.3f), Color.Transparent)
+                            listOf(AccentGold.copy(0.3f), Color.Transparent)
                     )
                 )
         )
@@ -225,18 +225,18 @@ fun VolumeIconWithGlow(
                 .background(
                     Brush.linearGradient(
                         if (isMuted || currentVolume == 0)
-                            listOf(Color(0xFFEF4444).copy(0.3f), Color(0xFFDC2626).copy(0.3f))
+                            listOf(StatusLive.copy(0.3f), StatusLive.copy(0.2f))
                         else
-                            listOf(HotstarBlue.copy(0.3f), HotstarPink.copy(0.3f))
+                            listOf(AccentGold.copy(0.3f), GradientGoldEnd.copy(0.2f))
                     )
                 )
                 .border(
                     1.5.dp,
                     Brush.linearGradient(
                         if (isMuted || currentVolume == 0)
-                            listOf(Color(0xFFEF4444).copy(0.6f), Color(0xFFDC2626).copy(0.6f))
+                            listOf(StatusLive.copy(0.6f), StatusLive.copy(0.4f))
                         else
-                            listOf(HotstarBlue.copy(0.6f), HotstarPink.copy(0.6f))
+                            listOf(AccentGold.copy(0.6f), GradientGoldEnd.copy(0.4f))
                     ),
                     CircleShape
                 ),
@@ -249,7 +249,7 @@ fun VolumeIconWithGlow(
                     else -> Icons.Default.VolumeUp
                 },
                 contentDescription = "Volume",
-                tint = if (isMuted || currentVolume == 0) Color(0xFFEF4444) else Color.White,
+                tint = if (isMuted || currentVolume == 0) StatusLive else TextPrimary,
                 modifier = Modifier.size(iconSize)
             )
         }
@@ -274,9 +274,9 @@ fun CircularVolumeIndicator(
             drawArc(
                 brush = Brush.sweepGradient(
                     if (isMuted)
-                        listOf(Color(0xFFEF4444), Color(0xFFDC2626), Color(0xFFEF4444))
+                        listOf(StatusLive, StatusLive.copy(0.8f), StatusLive)
                     else
-                        listOf(HotstarBlue, HotstarPink, HotstarPinkSoft, HotstarBlue)
+                        listOf(GradientGoldStart, GradientGoldEnd, AccentGoldLight, GradientGoldStart)
                 ),
                 startAngle = 135f,
                 sweepAngle = sweep,
@@ -288,7 +288,7 @@ fun CircularVolumeIndicator(
                 val angle = (135f + sweep) * PI / 180f
                 val cx = center.x + radius * cos(angle).toFloat()
                 val cy = center.y + radius * sin(angle).toFloat()
-                drawCircle(if (isMuted) Color(0xFFEF4444) else HotstarPink, stroke / 2, Offset(cx, cy))
+                drawCircle(if (isMuted) StatusLive else GradientGoldEnd, stroke / 2, Offset(cx, cy))
             }
         }
 
@@ -299,7 +299,7 @@ fun CircularVolumeIndicator(
                 .background(SurfaceCard)
                 .border(
                     1.5.dp,
-                    if (isMuted) Color(0xFFEF4444).copy(0.5f) else HotstarBlue.copy(0.5f),
+                    if (isMuted) StatusLive.copy(0.5f) else AccentGold.copy(0.5f),
                     CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -307,7 +307,7 @@ fun CircularVolumeIndicator(
             Icon(
                 imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
                 contentDescription = "Volume",
-                tint = if (isMuted) Color(0xFFEF4444) else Color.White,
+                tint = if (isMuted) StatusLive else TextPrimary,
                 modifier = Modifier.size(size * 0.25f)
             )
         }

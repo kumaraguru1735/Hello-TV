@@ -1,6 +1,7 @@
 package com.shadow.hellotv.ui.tv
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -54,8 +55,8 @@ fun TvSettingsPanel(
                 Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xE00B1622),
-                        Color(0xF00B1622)
+                        TvSurface.copy(alpha = 0.88f),
+                        TvSurface.copy(alpha = 0.94f)
                     )
                 )
             )
@@ -95,8 +96,8 @@ private fun TabItem(
     var isFocused by remember { mutableStateOf(false) }
     val isActive = tab == activeTab
     val bgColor = when {
-        isActive -> HotstarBlue
-        isFocused -> HotstarBlue.copy(alpha = 0.3f)
+        isActive -> AccentGold
+        isFocused -> AccentGold.copy(alpha = 0.3f)
         else -> SurfaceElevated
     }
 
@@ -110,11 +111,11 @@ private fun TabItem(
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = if (isActive) Color.White else TextMuted, modifier = Modifier.size(16.dp))
+            Icon(icon, null, tint = if (isActive) Color.Black else if (isFocused) AccentGoldLight else TextMuted, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
             Text(
                 label,
-                color = if (isActive || isFocused) Color.White else TextSecondary,
+                color = if (isActive) Color.Black else if (isFocused) Color.White else TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
             )
@@ -144,10 +145,10 @@ private fun ProfileTab(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(HotstarBlue.copy(alpha = 0.2f)),
+                                .background(AccentGold.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Person, null, tint = HotstarBlue, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Default.Person, null, tint = AccentGold, modifier = Modifier.size(22.dp))
                         }
                         Spacer(Modifier.width(12.dp))
                         Column {
@@ -343,7 +344,7 @@ private fun SessionsTab(onManageSessions: () -> Unit) {
         Button(
             onClick = onManageSessions,
             shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = HotstarBlue),
+            colors = ButtonDefaults.buttonColors(containerColor = AccentGold),
             modifier = Modifier
                 .onFocusChanged { isFocused = it.isFocused }
                 .focusable()
@@ -362,8 +363,8 @@ private fun TrackOption(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val bgColor = when {
-        isSelected -> HotstarBlue.copy(alpha = 0.2f)
-        isFocused -> SurfaceOverlay
+        isSelected -> AccentGold.copy(alpha = 0.2f)
+        isFocused -> AccentGold.copy(alpha = 0.08f)
         else -> SurfaceCard
     }
 
@@ -372,6 +373,13 @@ private fun TrackOption(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(bgColor)
+            .then(
+                when {
+                    isSelected -> Modifier.border(1.dp, AccentGold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    isFocused -> Modifier.border(1.dp, AccentGold.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    else -> Modifier
+                }
+            )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
@@ -379,11 +387,11 @@ private fun TrackOption(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, color = if (isSelected) HotstarBlueLight else TextPrimary, fontSize = 14.sp)
+            Text(label, color = if (isSelected) AccentGoldLight else TextPrimary, fontSize = 14.sp)
             Text(detail, color = TextMuted, fontSize = 11.sp)
         }
         if (isSelected) {
-            Icon(Icons.Default.CheckCircle, null, tint = HotstarBlue, modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.CheckCircle, null, tint = AccentGold, modifier = Modifier.size(18.dp))
         }
     }
 }

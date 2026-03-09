@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -24,6 +23,7 @@ import com.shadow.hellotv.ui.common.SessionKickoutScreen
 import com.shadow.hellotv.ui.mobile.MobilePlayerScreen
 import com.shadow.hellotv.ui.theme.HelloTVTheme
 import com.shadow.hellotv.ui.theme.IntroUi
+import com.shadow.hellotv.ui.theme.PlayerBackground
 import com.shadow.hellotv.ui.tv.TvPlayerScreen
 import com.shadow.hellotv.utils.KeepScreenOn
 import com.shadow.hellotv.viewmodel.AppScreen
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black)
+                            .background(PlayerBackground)
                     ) {
                         HelloTVApp()
                     }

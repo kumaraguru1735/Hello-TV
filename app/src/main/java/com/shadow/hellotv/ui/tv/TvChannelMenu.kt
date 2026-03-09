@@ -34,11 +34,6 @@ import com.shadow.hellotv.model.Channel
 import com.shadow.hellotv.model.Language
 import com.shadow.hellotv.ui.theme.*
 
-private val AccentGold = Color(0xFFFFB800)
-private val TvSurface = Color(0xFF0D0D0D)
-private val TvSurfaceCard = Color(0xFF1A1A1A)
-private val TvSeparator = Color(0xFF2A2A2A)
-
 @Composable
 fun TvChannelMenu(
     channels: List<Channel>,
@@ -216,8 +211,8 @@ private fun TvCategoryItem(
     Text(
         name,
         color = when {
-            selected -> Color.White
-            isFocused -> AccentGold
+            selected -> AccentGold
+            isFocused -> AccentGoldLight
             else -> Color.White.copy(alpha = 0.4f)
         },
         fontSize = 14.sp,
@@ -229,7 +224,7 @@ private fun TvCategoryItem(
             .clip(RoundedCornerShape(6.dp))
             .then(
                 when {
-                    isFocused -> Modifier.background(Color.White.copy(alpha = 0.05f))
+                    isFocused -> Modifier.background(AccentGold.copy(alpha = 0.08f))
                     else -> Modifier
                 }
             )
@@ -258,8 +253,8 @@ private fun TvChannelItem(
                         .border(1.dp, AccentGold, RoundedCornerShape(6.dp))
                         .background(AccentGold.copy(alpha = 0.08f))
                     isFocused -> Modifier
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                        .background(AccentGold.copy(alpha = 0.06f))
+                        .border(1.dp, AccentGold.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
                     else -> Modifier
                 }
             )

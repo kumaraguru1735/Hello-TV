@@ -38,8 +38,6 @@ import androidx.compose.ui.unit.sp
 import com.shadow.hellotv.LocalIsTv
 import com.shadow.hellotv.ui.theme.*
 
-private val Indigo = Color(0xFF6366F1)
-
 enum class ActiveField { PHONE, PIN }
 
 @Composable
@@ -102,16 +100,16 @@ fun LoginScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Hello", color = HotstarBlue, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
-            Text("TV", color = Indigo, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
+            Text("Hello", color = AccentGold, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
+            Text("TV", color = AccentGoldLight, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
             Spacer(Modifier.weight(1f))
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
+                    .background(AccentGoldSoft)
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
-                Text("LOGIN", color = Color.White.copy(alpha = 0.35f), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("LOGIN", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -127,7 +125,7 @@ fun LoginScreen(
 
         // ── PIN input ──
         GlassInput(
-            value = if (!showPin && pin.isNotEmpty()) "●".repeat(pin.length) else pin,
+            value = if (!showPin && pin.isNotEmpty()) "\u25CF".repeat(pin.length) else pin,
             placeholder = "PIN", isActive = activeField == ActiveField.PIN,
             onClick = { activeField = ActiveField.PIN }, leadingIcon = Icons.Default.Lock,
             focusRequester = pinFocus, onFocusGained = { activeField = ActiveField.PIN },
@@ -135,7 +133,7 @@ fun LoginScreen(
             trailingContent = {
                 Icon(
                     if (showPin) Icons.Default.VisibilityOff else Icons.Default.Visibility, null,
-                    tint = Color.White.copy(alpha = 0.3f),
+                    tint = TextMuted,
                     modifier = Modifier.size(18.dp).clickable { showPin = !showPin }
                 )
             }
@@ -148,7 +146,7 @@ fun LoginScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .then(if (rememberFocused) Modifier.border(1.dp, HotstarBlue.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) else Modifier)
+                .then(if (rememberFocused) Modifier.border(1.dp, AccentGold.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) else Modifier)
                 .clickable { rememberMe = !rememberMe }
                 .focusRequester(rememberFocus).onFocusChanged { rememberFocused = it.isFocused }.focusable()
                 .onKeyEvent { event ->
@@ -165,14 +163,14 @@ fun LoginScreen(
         ) {
             Box(
                 modifier = Modifier.size(18.dp).clip(RoundedCornerShape(5.dp))
-                    .background(if (rememberMe) Brush.horizontalGradient(listOf(HotstarBlue, Indigo)) else Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f))))
-                    .border(1.dp, if (rememberMe) Color.Transparent else Color.White.copy(alpha = 0.15f), RoundedCornerShape(5.dp)),
+                    .background(if (rememberMe) Brush.horizontalGradient(listOf(GradientGoldStart, GradientGoldEnd)) else Brush.horizontalGradient(listOf(SurfaceInput, SurfaceInput)))
+                    .border(1.dp, if (rememberMe) Color.Transparent else SurfaceSeparator, RoundedCornerShape(5.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (rememberMe) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(13.dp))
+                if (rememberMe) Icon(Icons.Default.Check, null, tint = Color.Black, modifier = Modifier.size(13.dp))
             }
             Spacer(Modifier.width(8.dp))
-            Text("Remember Me", color = Color.White.copy(alpha = if (rememberFocused) 0.8f else 0.45f), fontSize = 12.sp)
+            Text("Remember Me", color = if (rememberFocused) TextSecondary else TextMuted, fontSize = 12.sp)
         }
         Spacer(Modifier.height(12.dp))
 
@@ -182,10 +180,10 @@ fun LoginScreen(
 
         Box(
             modifier = Modifier.fillMaxWidth().height(44.dp)
-                .shadow(if (loginBtnFocused || canLogin) 16.dp else 0.dp, RoundedCornerShape(12.dp), spotColor = HotstarBlue.copy(alpha = 0.4f))
+                .shadow(if (loginBtnFocused || canLogin) 16.dp else 0.dp, RoundedCornerShape(12.dp), spotColor = AccentGold.copy(alpha = 0.4f))
                 .clip(RoundedCornerShape(12.dp))
-                .background(if (canLogin) Brush.horizontalGradient(listOf(HotstarBlue, Indigo)) else Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.04f))))
-                .then(if (loginBtnFocused) Modifier.border(2.dp, HotstarBlue, RoundedCornerShape(12.dp)) else Modifier)
+                .background(if (canLogin) Brush.horizontalGradient(listOf(GradientGoldStart, GradientGoldEnd)) else Brush.horizontalGradient(listOf(SurfaceInput, SurfaceCard)))
+                .then(if (loginBtnFocused) Modifier.border(2.dp, AccentGoldLight, RoundedCornerShape(12.dp)) else Modifier)
                 .focusRequester(loginFocus).onFocusChanged { loginBtnFocused = it.isFocused }.focusable()
                 .onKeyEvent { event ->
                     if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
@@ -201,13 +199,13 @@ fun LoginScreen(
             contentAlignment = Alignment.Center
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.Black, strokeWidth = 2.dp)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Continue", color = if (canLogin) Color.White else Color.White.copy(alpha = 0.25f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp)
+                    Text("Continue", color = if (canLogin) Color.Black else TextMuted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp)
                     if (canLogin) {
                         Spacer(Modifier.width(6.dp))
-                        Icon(Icons.Default.ArrowForward, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ArrowForward, null, tint = Color.Black.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -229,16 +227,16 @@ fun LoginScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF080C18))
+            .background(SurfaceDark)
     ) {
         // Decorative ambient glow
         Box(
             modifier = Modifier.size(500.dp).offset(x = (-150).dp, y = (-150).dp)
-                .background(Brush.radialGradient(colors = listOf(HotstarBlue.copy(alpha = 0.10f), Color.Transparent)))
+                .background(Brush.radialGradient(colors = listOf(AccentGold.copy(alpha = 0.06f), Color.Transparent)))
         )
         Box(
             modifier = Modifier.size(400.dp).align(Alignment.BottomEnd).offset(x = 100.dp, y = 100.dp)
-                .background(Brush.radialGradient(colors = listOf(Indigo.copy(alpha = 0.07f), Color.Transparent)))
+                .background(Brush.radialGradient(colors = listOf(GradientGoldEnd.copy(alpha = 0.04f), Color.Transparent)))
         )
 
         if (isPortrait && !isTv) {
@@ -259,8 +257,8 @@ fun LoginScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Brush.verticalGradient(listOf(Color(0xFF131B2E), Color(0xFF0F1724))))
-                        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.03f))), RoundedCornerShape(20.dp))
+                        .background(Brush.verticalGradient(listOf(SurfaceElevated, SurfacePrimary)))
+                        .border(1.dp, Brush.verticalGradient(listOf(AccentGold.copy(alpha = 0.10f), Color.White.copy(alpha = 0.03f))), RoundedCornerShape(20.dp))
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Column(
@@ -279,7 +277,7 @@ fun LoginScreen(
                         ActiveField.PHONE -> "Entering Phone"
                         ActiveField.PIN -> "Entering PIN"
                     },
-                    color = HotstarBlue.copy(alpha = 0.6f),
+                    color = AccentGold.copy(alpha = 0.6f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 0.5.sp
@@ -315,10 +313,10 @@ fun LoginScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = HotstarBlue.copy(alpha = 0.15f))
+                            .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = AccentGold.copy(alpha = 0.10f))
                             .clip(RoundedCornerShape(24.dp))
-                            .background(Brush.verticalGradient(listOf(Color(0xFF131B2E), Color(0xFF0F1724))))
-                            .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.03f))), RoundedCornerShape(24.dp))
+                            .background(Brush.verticalGradient(listOf(SurfaceElevated, SurfacePrimary)))
+                            .border(1.dp, Brush.verticalGradient(listOf(AccentGold.copy(alpha = 0.10f), Color.White.copy(alpha = 0.03f))), RoundedCornerShape(24.dp))
                             .padding(horizontal = 20.dp, vertical = 16.dp)
                     ) {
                         Column(
@@ -341,7 +339,7 @@ fun LoginScreen(
                             ActiveField.PHONE -> "Entering Phone"
                             ActiveField.PIN -> "Entering PIN"
                         },
-                        color = HotstarBlue.copy(alpha = 0.6f),
+                        color = AccentGold.copy(alpha = 0.6f),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 0.5.sp
@@ -381,16 +379,13 @@ private fun GlassInput(
             .fillMaxWidth()
             .height(44.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (isActive) Color.White.copy(alpha = 0.07f)
-                else Color.White.copy(alpha = 0.03f)
-            )
+            .background(if (isActive) SurfaceInput else SurfaceCard.copy(alpha = 0.6f))
             .border(
                 width = if (isActive) 1.5.dp else 1.dp,
                 brush = if (isActive)
-                    Brush.horizontalGradient(listOf(HotstarBlue, Indigo))
+                    Brush.horizontalGradient(listOf(AccentGold, GradientGoldEnd))
                 else
-                    Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.06f))),
+                    Brush.horizontalGradient(listOf(SurfaceSeparator, SurfaceSeparator)),
                 shape = RoundedCornerShape(12.dp)
             )
             .focusRequester(focusRequester)
@@ -415,7 +410,7 @@ private fun GlassInput(
     ) {
         Icon(
             leadingIcon, null,
-            tint = if (isActive) HotstarBlue else Color.White.copy(alpha = 0.2f),
+            tint = if (isActive) AccentGold else TextMuted,
             modifier = Modifier.size(18.dp)
         )
         Spacer(Modifier.width(10.dp))
@@ -423,21 +418,21 @@ private fun GlassInput(
             if (value.isEmpty()) {
                 Text(
                     placeholder,
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = TextMuted,
                     fontSize = 14.sp
                 )
             }
             Row {
                 Text(
                     value,
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = TextPrimary,
                     fontSize = 14.sp,
                     letterSpacing = if (placeholder == "PIN") 2.sp else 0.sp
                 )
                 if (isActive) {
                     Text(
-                        "│",
-                        color = HotstarBlue.copy(alpha = 0.8f),
+                        "\u2502",
+                        color = AccentGold.copy(alpha = 0.8f),
                         fontSize = 14.sp
                     )
                 }
@@ -460,7 +455,7 @@ private fun NumberPad(
         listOf('1', '2', '3'),
         listOf('4', '5', '6'),
         listOf('7', '8', '9'),
-        listOf('C', '0', '⌫')
+        listOf('C', '0', '\u232B')
     )
 
     val availableH = (screenHeight * 0.72f).toInt()
@@ -477,7 +472,7 @@ private fun NumberPad(
                     PadKey(key = key, size = btnSize.dp) {
                         when (key) {
                             'C' -> onClear()
-                            '⌫' -> onBackspace()
+                            '\u232B' -> onBackspace()
                             else -> onDigit(key)
                         }
                     }
@@ -502,28 +497,26 @@ private fun PadKey(
             .shadow(
                 if (isFocused) 8.dp else 0.dp,
                 CircleShape,
-                spotColor = HotstarBlue.copy(alpha = 0.5f)
+                spotColor = AccentGold.copy(alpha = 0.5f)
             )
             .clip(CircleShape)
             .background(
                 when {
-                    isFocused && key == 'C' -> Brush.radialGradient(listOf(Color(0xFFEF4444), Color(0xFFDC2626)))
-                    isFocused && key == '⌫' -> Brush.radialGradient(listOf(Color(0xFFFBBF24), Color(0xFFF59E0B)))
-                    isFocused -> Brush.radialGradient(listOf(HotstarBlue, Indigo))
-                    key == 'C' -> Brush.radialGradient(listOf(Color(0x15EF4444), Color(0x10EF4444)))
-                    key == '⌫' -> Brush.radialGradient(listOf(Color(0x15FBBF24), Color(0x10FBBF24)))
-                    else -> Brush.radialGradient(
-                        listOf(Color.White.copy(alpha = 0.07f), Color.White.copy(alpha = 0.03f))
-                    )
+                    isFocused && key == 'C' -> Brush.radialGradient(listOf(StatusLive, StatusLive.copy(alpha = 0.8f)))
+                    isFocused && key == '\u232B' -> Brush.radialGradient(listOf(AccentGold, AccentGoldDark))
+                    isFocused -> Brush.radialGradient(listOf(GradientGoldStart, GradientGoldEnd))
+                    key == 'C' -> Brush.radialGradient(listOf(StatusLive.copy(alpha = 0.08f), StatusLive.copy(alpha = 0.04f)))
+                    key == '\u232B' -> Brush.radialGradient(listOf(AccentGold.copy(alpha = 0.08f), AccentGold.copy(alpha = 0.04f)))
+                    else -> Brush.radialGradient(listOf(SurfaceCard, SurfacePrimary))
                 }
             )
             .border(
                 1.dp,
                 when {
                     isFocused -> Color.Transparent
-                    key == 'C' -> Color(0x20EF4444)
-                    key == '⌫' -> Color(0x20FBBF24)
-                    else -> Color.White.copy(alpha = 0.05f)
+                    key == 'C' -> StatusLive.copy(alpha = 0.12f)
+                    key == '\u232B' -> AccentGold.copy(alpha = 0.12f)
+                    else -> SurfaceSeparator.copy(alpha = 0.5f)
                 },
                 CircleShape
             )
@@ -537,21 +530,21 @@ private fun PadKey(
         contentAlignment = Alignment.Center
     ) {
         when (key) {
-            '⌫' -> Icon(
+            '\u232B' -> Icon(
                 Icons.AutoMirrored.Filled.Backspace, "Backspace",
-                tint = if (isFocused) Color.White else Color(0xCCFBBF24),
+                tint = if (isFocused) Color.Black else AccentGold,
                 modifier = Modifier.size(if (isFocused) 22.dp else 20.dp)
             )
             'C' -> Text(
                 "CLR",
-                color = if (isFocused) Color.White else Color(0xCCEF4444),
+                color = if (isFocused) TextPrimary else StatusLive,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp
             )
             else -> Text(
                 key.toString(),
-                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.8f),
+                color = if (isFocused) Color.Black else TextPrimary,
                 fontSize = 18.sp,
                 fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium
             )

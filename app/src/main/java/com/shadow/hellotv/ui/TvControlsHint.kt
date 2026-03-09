@@ -76,7 +76,7 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                 .shadow(
                     elevation = 16.dp,
                     shape = RoundedCornerShape(16.dp),
-                    spotColor = HotstarBlue.copy(alpha = 0.3f)
+                    spotColor = AccentGold.copy(alpha = 0.3f)
                 ),
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
@@ -88,7 +88,7 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                SurfaceDark.copy(alpha = 0.96f),
+                                TvSurfaceCard.copy(alpha = 0.96f),
                                 SurfaceCard.copy(alpha = 0.96f)
                             )
                         )
@@ -97,8 +97,8 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                         width = 1.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                HotstarBlue.copy(alpha = 0.4f),
-                                HotstarPink.copy(alpha = 0.4f)
+                                AccentGold.copy(alpha = 0.4f),
+                                AccentGoldDark.copy(alpha = 0.3f)
                             )
                         ),
                         shape = RoundedCornerShape(16.dp)
@@ -117,14 +117,14 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        HotstarBlue.copy(alpha = 0.3f),
-                                        HotstarPink.copy(alpha = 0.2f)
+                                        AccentGold.copy(alpha = 0.3f),
+                                        AccentGoldDark.copy(alpha = 0.15f)
                                     )
                                 )
                             )
                             .border(
                                 width = 1.dp,
-                                color = HotstarBlue.copy(alpha = 0.5f),
+                                color = AccentGold.copy(alpha = 0.5f),
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -132,7 +132,7 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = HotstarBlue,
+                            tint = AccentGold,
                             modifier = Modifier.size(if (isTV) 16.dp else 14.dp)
                         )
                     }
@@ -142,11 +142,11 @@ fun TvControlsHint(modifier: Modifier = Modifier) {
                         verticalArrangement = Arrangement.spacedBy(if (isTV) 4.dp else 3.dp)
                     ) {
                         ControlHintText(
-                            text = "OK: Menu • ↑↓: Change • →: Settings",
+                            text = "OK: Menu \u2022 \u2191\u2193: Change \u2022 \u2192: Settings",
                             isTV = isTV
                         )
                         ControlHintText(
-                            text = "Touch: Tap info • Swipe ↕ change",
+                            text = "Touch: Tap info \u2022 Swipe \u2195 change",
                             isTV = isTV
                         )
                     }
@@ -163,7 +163,7 @@ fun ControlHintText(
 ) {
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.85f),
+        color = TextSecondary,
         fontSize = if (isTV) 11.sp else 10.sp,
         fontWeight = FontWeight.Medium,
         letterSpacing = 0.3.sp

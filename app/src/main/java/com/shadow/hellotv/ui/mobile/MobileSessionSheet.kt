@@ -54,7 +54,7 @@ fun MobileSessionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = SurfaceDark,
+        containerColor = SurfacePrimary,
         dragHandle = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -83,7 +83,7 @@ fun MobileSessionSheet(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = HotstarBlue)
+                    CircularProgressIndicator(color = AccentGold)
                 }
             } else if (error != null) {
                 Text(
@@ -147,10 +147,10 @@ private fun SessionCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(HotstarBlue.copy(alpha = 0.12f)),
+                    .background(AccentGold.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = HotstarBlue, modifier = Modifier.size(22.dp))
+                Icon(icon, null, tint = AccentGold, modifier = Modifier.size(22.dp))
             }
 
             Spacer(Modifier.width(12.dp))

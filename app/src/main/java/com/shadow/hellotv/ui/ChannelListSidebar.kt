@@ -72,7 +72,7 @@ fun ChannelListSidebar(
             .shadow(
                 elevation = 32.dp,
                 shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-                spotColor = HotstarBlue.copy(alpha = 0.4f)
+                spotColor = AccentGold.copy(alpha = 0.3f)
             ),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
@@ -83,9 +83,9 @@ fun ChannelListSidebar(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            SurfaceDark,
+                            SurfacePrimary,
                             SurfaceCard,
-                            SurfaceDark
+                            SurfacePrimary
                         )
                     )
                 )
@@ -93,9 +93,9 @@ fun ChannelListSidebar(
                     width = 1.dp,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            HotstarBlue.copy(alpha = 0.3f),
-                            HotstarPink.copy(alpha = 0.2f),
-                            HotstarBlue.copy(alpha = 0.3f)
+                            AccentGold.copy(alpha = 0.3f),
+                            GradientGoldEnd.copy(alpha = 0.2f),
+                            AccentGold.copy(alpha = 0.3f)
                         )
                     ),
                     shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
@@ -110,7 +110,7 @@ fun ChannelListSidebar(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Channels",
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = if (isTV) 32.sp else 28.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.5.sp
@@ -154,8 +154,8 @@ fun ChannelListSidebar(
                         .fillMaxWidth()
                         .height(if (isTV) 54.dp else 48.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                        .background(SurfaceInput)
+                        .border(1.dp, SurfaceSeparator, RoundedCornerShape(16.dp))
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -179,7 +179,7 @@ fun ChannelListSidebar(
 
                 Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
-                HorizontalDivider(color = Color.White.copy(alpha = 0.08f), thickness = 1.dp)
+                HorizontalDivider(color = SurfaceSeparator, thickness = 1.dp)
 
                 Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
@@ -251,11 +251,11 @@ private fun FilterChip(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(
-                if (isSelected) Brush.horizontalGradient(listOf(HotstarBlue, GradientBlueEnd))
+                if (isSelected) Brush.horizontalGradient(listOf(GradientGoldStart, GradientGoldEnd))
                 else Brush.horizontalGradient(listOf(Color.White.copy(0.08f), Color.White.copy(0.06f)))
             )
             .then(
-                if (!isSelected) Modifier.border(1.dp, Color.White.copy(0.15f), RoundedCornerShape(20.dp))
+                if (!isSelected) Modifier.border(1.dp, SurfaceSeparator, RoundedCornerShape(20.dp))
                 else Modifier
             )
             .clickable { onClick() }
@@ -263,7 +263,7 @@ private fun FilterChip(
     ) {
         Text(
             text = text,
-            color = if (isSelected) Color.White else TextMuted,
+            color = if (isSelected) Color.Black else TextMuted,
             fontSize = if (isTV) 12.sp else 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1
@@ -284,7 +284,7 @@ fun ChannelListItemComposable(
             .shadow(
                 elevation = if (isSelected) 12.dp else 2.dp,
                 shape = RoundedCornerShape(16.dp),
-                spotColor = if (isSelected) HotstarBlue.copy(alpha = 0.5f) else Color.Transparent
+                spotColor = if (isSelected) AccentGold.copy(alpha = 0.4f) else Color.Transparent
             ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.04f)
@@ -298,8 +298,8 @@ fun ChannelListItemComposable(
                     if (isSelected) {
                         Brush.horizontalGradient(
                             colors = listOf(
-                                HotstarBlue.copy(alpha = 0.25f),
-                                HotstarPink.copy(alpha = 0.15f)
+                                AccentGold.copy(alpha = 0.2f),
+                                GradientGoldEnd.copy(alpha = 0.1f)
                             )
                         )
                     } else {
@@ -308,7 +308,7 @@ fun ChannelListItemComposable(
                 )
                 .border(
                     width = if (isSelected) 1.5.dp else 0.dp,
-                    color = if (isSelected) HotstarBlue.copy(alpha = 0.5f) else Color.Transparent,
+                    color = if (isSelected) AccentGold.copy(alpha = 0.5f) else Color.Transparent,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(if (isTV) 16.dp else 14.dp)
@@ -324,7 +324,7 @@ fun ChannelListItemComposable(
                         .clip(CircleShape)
                         .background(
                             if (isSelected) {
-                                Brush.linearGradient(listOf(HotstarBlue, HotstarPink))
+                                Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
                             } else {
                                 Brush.linearGradient(
                                     listOf(Color.White.copy(0.12f), Color.White.copy(0.08f))
@@ -335,7 +335,7 @@ fun ChannelListItemComposable(
                 ) {
                     Text(
                         text = "$channelNumber",
-                        color = Color.White,
+                        color = if (isSelected) Color.Black else Color.White,
                         fontSize = if (isTV) 16.sp else 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -349,7 +349,7 @@ fun ChannelListItemComposable(
                         .background(SurfaceElevated)
                         .border(
                             width = 1.5.dp,
-                            color = if (isSelected) HotstarBlue.copy(0.5f)
+                            color = if (isSelected) AccentGold.copy(0.5f)
                             else Color.White.copy(0.08f),
                             shape = CircleShape
                         ),
@@ -381,7 +381,7 @@ fun ChannelListItemComposable(
                 ) {
                     Text(
                         text = channel.name,
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = if (isTV) 17.sp else 16.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 1,

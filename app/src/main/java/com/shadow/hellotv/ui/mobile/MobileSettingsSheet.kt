@@ -34,7 +34,7 @@ fun MobileSettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = SurfaceDark,
+        containerColor = SurfacePrimary,
         dragHandle = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -72,10 +72,10 @@ fun MobileSettingsSheet(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(HotstarBlue.copy(alpha = 0.15f)),
+                                .background(AccentGold.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Person, null, tint = HotstarBlue, modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.Person, null, tint = AccentGold, modifier = Modifier.size(24.dp))
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -190,7 +190,7 @@ fun MobileSettingsSheet(
 private fun SectionLabel(title: String) {
     Text(
         title,
-        color = TextMuted,
+        color = AccentGold,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 0.5.sp,
@@ -204,19 +204,19 @@ private fun TrackItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) HotstarBlue.copy(alpha = 0.12f) else Color.Transparent)
+            .background(if (isSelected) AccentGold.copy(alpha = 0.12f) else Color.Transparent)
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             label,
-            color = if (isSelected) HotstarBlueLight else TextPrimary,
+            color = if (isSelected) AccentGoldLight else TextPrimary,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
         if (isSelected) {
-            Icon(Icons.Default.CheckCircle, null, tint = HotstarBlue, modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.CheckCircle, null, tint = AccentGold, modifier = Modifier.size(18.dp))
         }
     }
 }

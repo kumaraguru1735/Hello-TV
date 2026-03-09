@@ -55,12 +55,6 @@ import com.shadow.hellotv.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-// Accent color matching reference design
-private val AccentGold = Color(0xFFFFB800)
-private val AccentGoldDark = Color(0xFFE5A500)
-private val SurfaceDark = Color(0xFF121212)
-private val SurfaceCard = Color(0xFF1A1A2E)
-private val SurfaceSeparator = Color(0xFF2A2A3E)
 
 @Composable
 fun MobilePlayerScreen(vm: MainViewModel) {
@@ -169,7 +163,7 @@ private fun PortraitPlayer(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceDark)
+            .background(SurfacePrimary)
             .statusBarsPadding()
     ) {
         // ── Search bar + Profile ──
@@ -184,14 +178,14 @@ private fun PortraitPlayer(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(SurfaceInput)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = Color.White.copy(alpha = 0.5f),
+                    tint = TextMuted,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
@@ -210,7 +204,7 @@ private fun PortraitPlayer(
                             if (vm.searchQuery.isEmpty()) {
                                 Text(
                                     vm.channels.getOrNull(vm.selectedChannelIndex)?.name ?: "Search channels",
-                                    color = Color.White.copy(alpha = 0.4f),
+                                    color = TextMuted,
                                     fontSize = 14.sp
                                 )
                             }
@@ -371,7 +365,7 @@ private fun PortraitPlayer(
                     modifier = Modifier
                         .width(130.dp)
                         .fillMaxHeight()
-                        .background(SurfaceDark),
+                        .background(SurfacePrimary),
                     contentPadding = PaddingValues(vertical = 2.dp)
                 ) {
                     item {
@@ -418,7 +412,7 @@ private fun LanguageChip(label: String, selected: Boolean, onClick: () -> Unit) 
                 if (selected) Modifier
                     .background(AccentGold)
                 else Modifier
-                    .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
+                    .border(1.dp, SurfaceSeparator, RoundedCornerShape(6.dp))
                     .background(Color.Transparent)
             )
             .clickable { onClick() }
@@ -426,7 +420,7 @@ private fun LanguageChip(label: String, selected: Boolean, onClick: () -> Unit) 
     ) {
         Text(
             label,
-            color = if (selected) Color.Black else Color.White.copy(alpha = 0.7f),
+            color = if (selected) Color.Black else TextSecondary,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
@@ -456,7 +450,7 @@ private fun CategoryItem(name: String, selected: Boolean, onClick: () -> Unit) {
         )
         Text(
             displayName,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.5f),
+            color = if (selected) TextPrimary else TextSecondary,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -480,7 +474,7 @@ private fun PortraitChannelRow(
             .clip(RoundedCornerShape(6.dp))
             .background(
                 if (isSelected) AccentGold.copy(alpha = 0.10f)
-                else Color(0xFF1C1C2A)
+                else SurfaceCard
             )
             .then(
                 if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(6.dp))
@@ -498,17 +492,17 @@ private fun PortraitChannelRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.06f))
+                    .background(SurfaceCard)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.06f)),
+                    .background(SurfaceCard),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(22.dp))
+                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(22.dp))
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -801,14 +795,14 @@ private fun FullscreenPlayer(
                                 .padding(horizontal = 10.dp)
                                 .height(3.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Color.White.copy(alpha = 0.2f))
+                                .background(PlayerSeekBarBg)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(2.dp))
-                                    .background(AccentGold)
+                                    .background(PlayerSeekBar)
                             )
                             // Thumb circle
                             Box(
@@ -816,7 +810,7 @@ private fun FullscreenPlayer(
                                     .align(Alignment.CenterEnd)
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(AccentGold)
+                                    .background(PlayerSeekBar)
                             )
                         }
                         Text(
@@ -888,7 +882,7 @@ private fun FullscreenPlayer(
                     if (currentVolume == 0) Icons.Default.VolumeOff
                     else if (currentVolume < maxVol / 2) Icons.Default.VolumeDown
                     else Icons.Default.VolumeUp,
-                    null, tint = Color.White, modifier = Modifier.size(28.dp)
+                    null, tint = AccentGold, modifier = Modifier.size(28.dp)
                 )
                 Spacer(Modifier.height(4.dp))
                 Text("${(currentVolume * 100f / maxVol).toInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -999,7 +993,7 @@ private fun FullscreenChannelPanel(
         modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth(0.58f)
-            .background(Color(0xF5101018))
+            .background(SurfaceDark.copy(alpha = 0.96f))
             .padding(top = 8.dp, bottom = 8.dp, start = 2.dp, end = 2.dp)
     ) {
         // Language tabs at top
@@ -1071,7 +1065,7 @@ private fun FullscreenChannelPanel(
                             .clip(RoundedCornerShape(6.dp))
                             .background(
                                 if (isSelected) AccentGold.copy(alpha = 0.10f)
-                                else Color(0xFF1C1C2A)
+                                else SurfaceCard
                             )
                             .then(
                                 if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(6.dp))
@@ -1085,14 +1079,14 @@ private fun FullscreenChannelPanel(
                             AsyncImage(
                                 model = channel.image,
                                 contentDescription = channel.name,
-                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.06f))
+                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(SurfaceCard)
                             )
                         } else {
                             Box(
-                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.06f)),
+                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(SurfaceCard),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(18.dp))
                             }
                         }
                         Spacer(Modifier.width(8.dp))
@@ -1137,7 +1131,7 @@ private fun PanelCategoryItem(name: String, selected: Boolean, onClick: () -> Un
         )
         Text(
             name,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.45f),
+            color = if (selected) TextPrimary else TextSecondary,
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -1303,7 +1297,7 @@ private fun TrackOptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xCC303040))
+            .background(PlayerControlBg)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
