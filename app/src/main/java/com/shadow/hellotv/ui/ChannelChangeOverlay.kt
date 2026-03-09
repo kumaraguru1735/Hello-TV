@@ -1,13 +1,16 @@
 package com.shadow.hellotv.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -18,8 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,22 +56,43 @@ fun ChannelChangeOverlay(
 
     AnimatedVisibility(
         visible = show && !showChannelList,
-        enter = fadeIn(tween(400)) +
+        enter = fadeIn(tween(350)) +
                 slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow)
-                ) +
-                scaleIn(initialScale = 0.8f, animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow)),
-        exit = fadeOut(tween(300)) +
-                slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) +
-                scaleOut(targetScale = 0.8f, animationSpec = tween(300))
+                    initialOffsetY = { it / 2 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ),
+        exit = fadeOut(tween(250)) +
+                slideOutVertically(
+                    targetOffsetY = { it / 3 },
+                    animationSpec = tween(250)
+                )
     ) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            // Gradient background from bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.35f)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                PlayerOverlay.copy(alpha = 0.6f),
+                                PlayerOverlay
+                            )
+                        )
+                    )
+            )
+
             channels.getOrNull(selectedChannelIndex)?.let { channel ->
-                Card(
+                Column(
                     modifier = Modifier
                         .widthIn(max = if (isTV) 600.dp else if (isTablet) 500.dp else screenWidth * 0.92f)
                         .padding(
@@ -74,157 +100,154 @@ fun ChannelChangeOverlay(
                             end = if (isTV) 48.dp else if (isTablet) 32.dp else 16.dp,
                             bottom = if (isTV) 48.dp else if (isTablet) 36.dp else 24.dp
                         )
-                        .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = AccentGold.copy(0.3f)),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    shape = RoundedCornerShape(24.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(SurfaceDark.copy(0.95f), SurfaceCard.copy(0.95f))
-                                )
-                            )
-                            .border(
-                                1.5.dp,
-                                Brush.linearGradient(
-                                    listOf(AccentGold.copy(0.4f), GradientGoldEnd.copy(0.3f))
-                                ),
-                                RoundedCornerShape(24.dp)
-                            )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(if (isTV) 20.dp else 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
+                        // Channel number badge - pill shape
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(if (isTV) 28.dp else if (isTablet) 24.dp else 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(if (isTV) 24.dp else 20.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .height(if (isTV) 32.dp else 28.dp)
+                                .widthIn(min = if (isTV) 48.dp else 40.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AccentGold)
+                                .padding(horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            // Channel number badge
+                            Text(
+                                text = "${selectedChannelIndex + 1}",
+                                color = Color.Black,
+                                fontSize = if (isTV) 16.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+
+                        // Channel logo with subtle glow
+                        val logoSize = if (isTV) 56.dp else 48.dp
+                        Box(
+                            modifier = Modifier.size(logoSize + 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // Glow effect
                             Box(
                                 modifier = Modifier
-                                    .size(if (isTV) 72.dp else if (isTablet) 64.dp else 56.dp)
-                                    .clip(RoundedCornerShape(16.dp))
+                                    .size(logoSize + 8.dp)
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(
-                                        Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
+                                        Brush.radialGradient(
+                                            listOf(AccentGold.copy(0.15f), Color.Transparent)
+                                        )
                                     )
-                                    .border(2.dp, Color.White.copy(0.3f), RoundedCornerShape(16.dp)),
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(logoSize)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(SurfaceElevated)
+                                    .border(
+                                        0.5.dp,
+                                        AccentGold.copy(0.5f),
+                                        RoundedCornerShape(10.dp)
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "${selectedChannelIndex + 1}",
-                                        color = Color.Black,
-                                        fontSize = if (isTV) 24.sp else if (isTablet) 22.sp else 20.sp,
-                                        fontWeight = FontWeight.Black,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                    Text(
-                                        text = "CH",
-                                        color = Color.Black.copy(0.7f),
-                                        fontSize = if (isTV) 10.sp else 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.sp
+                                AsyncImage(
+                                    model = channel.image,
+                                    contentDescription = "Channel Logo",
+                                    modifier = Modifier
+                                        .size(logoSize - 4.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                if (channel.image.isEmpty()) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        tint = TextDisabled,
+                                        modifier = Modifier.size(if (isTV) 28.dp else 24.dp)
                                     )
                                 }
                             }
+                        }
 
-                            // Channel logo
-                            Box(
-                                modifier = Modifier.size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp),
-                                contentAlignment = Alignment.Center
+                        // Channel info
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Channel name
+                            Text(
+                                text = channel.name,
+                                color = TextPrimary,
+                                fontSize = if (isTV) 22.sp else 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Badges row
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(if (isTV) 88.dp else if (isTablet) 78.dp else 72.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            Brush.radialGradient(
-                                                listOf(AccentGold.copy(0.2f), Color.Transparent)
-                                            )
-                                        )
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(if (isTV) 80.dp else if (isTablet) 70.dp else 64.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(SurfaceElevated)
-                                        .border(
-                                            2.dp,
-                                            Brush.linearGradient(
-                                                listOf(AccentGold.copy(0.5f), GradientGoldEnd.copy(0.3f))
-                                            ),
-                                            RoundedCornerShape(16.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    AsyncImage(
-                                        model = channel.image,
-                                        contentDescription = "Channel Logo",
+                                // LIVE badge with pulsing dot
+                                LiveBadge(isTV = isTV)
+
+                                // HD badge
+                                if (channel.description.isNotEmpty()) {
+                                    Box(
                                         modifier = Modifier
-                                            .size(if (isTV) 72.dp else if (isTablet) 62.dp else 56.dp)
-                                            .clip(RoundedCornerShape(14.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    if (channel.image.isEmpty()) {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = TextDisabled,
-                                            modifier = Modifier.size(if (isTV) 32.dp else 28.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .border(1.dp, AccentGold.copy(0.6f), RoundedCornerShape(6.dp))
+                                            .padding(
+                                                horizontal = if (isTV) 8.dp else 6.dp,
+                                                vertical = if (isTV) 3.dp else 2.dp
+                                            )
+                                    ) {
+                                        Text(
+                                            text = channel.description.uppercase(),
+                                            color = AccentGold,
+                                            fontSize = if (isTV) 10.sp else 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
-                            }
 
-                            // Channel info
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(if (isTV) 6.dp else 4.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = channel.name,
-                                        color = TextPrimary,
-                                        fontSize = if (isTV) 26.sp else if (isTablet) 22.sp else 20.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    // Live badge
+                                // Premium badge
+                                if (channel.premium == 1) {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(StatusLive.copy(0.2f))
-                                            .border(1.dp, StatusLive.copy(0.5f), RoundedCornerShape(8.dp))
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(
+                                                Brush.horizontalGradient(
+                                                    listOf(GradientGoldStart, GradientGoldEnd)
+                                                )
+                                            )
                                             .padding(
-                                                horizontal = if (isTV) 10.dp else 8.dp,
-                                                vertical = if (isTV) 5.dp else 4.dp
+                                                horizontal = if (isTV) 8.dp else 6.dp,
+                                                vertical = if (isTV) 3.dp else 2.dp
                                             )
                                     ) {
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(if (isTV) 7.dp else 6.dp)
-                                                    .clip(CircleShape)
-                                                    .background(StatusLive)
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = null,
+                                                tint = Color.Black,
+                                                modifier = Modifier.size(if (isTV) 10.dp else 9.dp)
                                             )
                                             Text(
-                                                text = "LIVE",
-                                                color = StatusLive,
-                                                fontSize = if (isTV) 10.sp else 9.sp,
+                                                text = "PREMIUM",
+                                                color = Color.Black,
+                                                fontSize = if (isTV) 9.sp else 8.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 letterSpacing = 0.5.sp
                                             )
@@ -232,88 +255,99 @@ fun ChannelChangeOverlay(
                                     }
                                 }
 
-                                // Badges row
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    if (channel.description.isNotEmpty()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f, fill = false)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(
-                                                    Brush.horizontalGradient(
-                                                        listOf(AccentGold.copy(0.15f), GradientGoldEnd.copy(0.1f))
-                                                    )
-                                                )
-                                                .border(1.dp, AccentGold.copy(0.3f), RoundedCornerShape(8.dp))
-                                                .padding(
-                                                    horizontal = if (isTV) 12.dp else 10.dp,
-                                                    vertical = if (isTV) 5.dp else 4.dp
-                                                )
+                                // DRM badge
+                                if (!channel.drmLicenceUrl.isNullOrEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(StatusWarning.copy(0.2f))
+                                            .border(1.dp, StatusWarning.copy(0.5f), RoundedCornerShape(6.dp))
+                                            .padding(
+                                                horizontal = if (isTV) 8.dp else 6.dp,
+                                                vertical = if (isTV) 3.dp else 2.dp
+                                            )
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = "DRM",
+                                                tint = StatusWarning,
+                                                modifier = Modifier.size(if (isTV) 10.dp else 9.dp)
+                                            )
                                             Text(
-                                                text = channel.description.uppercase(),
-                                                color = Color.White.copy(0.9f),
-                                                fontSize = if (isTV) 12.sp else if (isTablet) 11.sp else 10.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                letterSpacing = 0.8.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                text = "DRM",
+                                                color = StatusWarning,
+                                                fontSize = if (isTV) 9.sp else 8.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.5.sp
                                             )
                                         }
                                     }
-
-                                    if (!channel.drmLicenceUrl.isNullOrEmpty()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(StatusWarning.copy(0.2f))
-                                                .border(1.dp, StatusWarning.copy(0.5f), RoundedCornerShape(8.dp))
-                                                .padding(
-                                                    horizontal = if (isTV) 10.dp else 8.dp,
-                                                    vertical = if (isTV) 5.dp else 4.dp
-                                                )
-                                        ) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Lock,
-                                                    contentDescription = "DRM",
-                                                    tint = StatusWarning,
-                                                    modifier = Modifier.size(if (isTV) 12.dp else 11.dp)
-                                                )
-                                                Text(
-                                                    text = "DRM",
-                                                    color = StatusWarning,
-                                                    fontSize = if (isTV) 10.sp else 9.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    letterSpacing = 0.5.sp
-                                                )
-                                            }
-                                        }
-                                    }
                                 }
-
-                                Spacer(modifier = Modifier.height(if (isTV) 2.dp else 1.dp))
-                                LinearProgressIndicator(
-                                    progress = { 0.7f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(if (isTV) 4.dp else 3.dp)
-                                        .clip(RoundedCornerShape(2.dp)),
-                                    color = AccentGold,
-                                    trackColor = Color.White.copy(0.1f)
-                                )
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Progress indicator at bottom - thin 2dp line
+                    LinearProgressIndicator(
+                        progress = { 0.7f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp)),
+                        color = AccentGold,
+                        trackColor = Color.White.copy(0.1f)
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LiveBadge(isTV: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "livePulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(StatusLive)
+            .padding(
+                horizontal = if (isTV) 8.dp else 6.dp,
+                vertical = if (isTV) 3.dp else 2.dp
+            )
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(if (isTV) 6.dp else 5.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = pulseAlpha))
+            )
+            Text(
+                text = "LIVE",
+                color = Color.White,
+                fontSize = if (isTV) 9.sp else 8.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            )
         }
     }
 }

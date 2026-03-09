@@ -1,6 +1,9 @@
 package com.shadow.hellotv.ui.mobile
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,11 +67,11 @@ fun MobileChannelSheet(
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = 8.dp)
-                    .width(40.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .width(32.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(TextMuted)
+                    .background(AccentGold)
             )
         }
     ) {
@@ -77,22 +80,28 @@ fun MobileChannelSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.9f)
         ) {
-            // ── Search bar ──
+            // -- Search bar --
             BasicTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
                 cursorBrush = SolidColor(AccentGold),
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(SurfaceInput)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .border(0.5.dp, SurfaceSeparator, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp),
                 decorationBox = { innerTextField ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Search, null, tint = TextMuted, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Icon(Icons.Default.Search, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
                         Box(Modifier.weight(1f)) {
                             if (searchQuery.isEmpty()) {
                                 Text("Search channels...", color = TextMuted, fontSize = 14.sp)
@@ -103,18 +112,20 @@ fun MobileChannelSheet(
                             Icon(
                                 Icons.Default.Clear, null,
                                 tint = TextMuted,
-                                modifier = Modifier.size(18.dp).clickable { searchQuery = "" }
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable { searchQuery = "" }
                             )
                         }
                     }
                 }
             )
 
-            // ── Language chips (horizontal, top) ──
+            // -- Language chips (horizontal, top) --
             if (vm.languages.isNotEmpty()) {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     item {
                         LanguageChip("All", vm.selectedLanguageId == null) {
@@ -131,13 +142,13 @@ fun MobileChannelSheet(
                 }
             }
 
-            // ── Main content: Categories (left) + Channels (right) ──
+            // -- Main content: Categories (left) + Channels (right) --
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                // ── Left: Category column ──
+                // -- Left: Category column --
                 if (vm.categories.isNotEmpty() && searchQuery.isEmpty()) {
                     LazyColumn(
                         modifier = Modifier
@@ -161,14 +172,13 @@ fun MobileChannelSheet(
                     }
                 }
 
-                // ── Right: Channel list ──
+                // -- Right: Channel list --
                 LazyColumn(
                     state = channelListState,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                    contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
                     // Channel count header
                     item {
@@ -176,7 +186,7 @@ fun MobileChannelSheet(
                             "${filteredChannels.size} channels",
                             color = TextMuted,
                             fontSize = 11.sp,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp, top = 4.dp)
                         )
                     }
 
@@ -187,6 +197,14 @@ fun MobileChannelSheet(
                             isSelected = originalIndex == vm.selectedChannelIndex,
                             onClick = { onChannelSelected(originalIndex) }
                         )
+                        // Separator
+                        if (index < filteredChannels.size - 1) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 54.dp),
+                                thickness = 0.5.dp,
+                                color = SurfaceSeparator
+                            )
+                        }
                     }
                 }
             }
@@ -200,20 +218,32 @@ private fun LanguageChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) AccentGold else Color.Transparent,
+        animationSpec = tween(200),
+        label = "chipBg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) Color.Black else TextSecondary,
+        animationSpec = tween(200),
+        label = "chipText"
+    )
+
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (selected) AccentGold
-                else SurfaceInput
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgColor)
+            .then(
+                if (!selected) Modifier.border(1.dp, SurfaceSeparator, RoundedCornerShape(20.dp))
+                else Modifier
             )
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
         Text(
             label,
-            color = if (selected) Color.Black else TextSecondary,
-            fontSize = 12.sp,
+            color = textColor,
+            fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
     }
@@ -225,36 +255,43 @@ private fun CategoryItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) AccentGoldSoft else Color.Transparent,
+        animationSpec = tween(200),
+        label = "catBg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) AccentGold else TextMuted,
+        animationSpec = tween(200),
+        label = "catText"
+    )
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                if (selected) AccentGold.copy(alpha = 0.15f) else Color.Transparent
-            )
+            .background(bgColor)
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 10.dp),
-        contentAlignment = Alignment.CenterStart
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.Start) {
-            if (selected) {
-                Box(
-                    modifier = Modifier
-                        .width(3.dp)
-                        .height(16.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(AccentGold)
-                )
-            }
-            Text(
-                name,
-                color = if (selected) AccentGoldLight else TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 14.sp
-            )
-        }
+        // Gold left accent bar for selected
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(18.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(if (selected) AccentGold else Color.Transparent)
+        )
+        Spacer(Modifier.width(9.dp))
+        Text(
+            name,
+            color = textColor,
+            fontSize = 11.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 14.sp
+        )
     }
 }
 
@@ -264,27 +301,35 @@ private fun ChannelRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val nameColor by animateColorAsState(
+        targetValue = if (isSelected) TextPrimary else TextSecondary,
+        animationSpec = tween(200),
+        label = "chName"
+    )
+    val numColor by animateColorAsState(
+        targetValue = if (isSelected) AccentGold else TextMuted,
+        animationSpec = tween(200),
+        label = "chNum"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                if (isSelected) AccentGold.copy(alpha = 0.1f)
-                else Color.Transparent
-            )
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Channel number
         Text(
             channel.channelNo.toString(),
-            color = if (isSelected) AccentGold else TextMuted,
-            fontSize = 11.sp,
+            color = numColor,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.width(28.dp),
             textAlign = TextAlign.Center
         )
+
+        Spacer(Modifier.width(6.dp))
 
         // Logo
         if (channel.image.isNotEmpty()) {
@@ -292,42 +337,43 @@ private fun ChannelRow(
                 model = channel.image,
                 contentDescription = channel.name,
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceCard)
             )
         } else {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceCard),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(20.dp))
             }
         }
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(10.dp))
 
         // Name
         Text(
             channel.name,
-            color = if (isSelected) TextPrimary else TextSecondary,
-            fontSize = 13.sp,
+            color = nameColor,
+            fontSize = 15.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
 
-        // Live indicator
+        // Selected indicator: gold dot
         if (isSelected) {
+            Spacer(Modifier.width(8.dp))
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(8.dp)
                     .clip(CircleShape)
-                    .background(StatusLive)
+                    .background(AccentGold)
             )
         }
     }

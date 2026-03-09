@@ -1,6 +1,8 @@
 package com.shadow.hellotv.ui.common
 
 import android.view.KeyEvent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,6 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
@@ -44,17 +48,48 @@ fun SessionKickoutScreen(
     val isCompact = config.screenHeightDp < 400
     val pad = if (isCompact) 14.dp else 28.dp
 
+    // Fade-in animation
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(600, easing = FastOutSlowInEasing),
+        label = "fadeIn"
+    )
+
+    // Pulse animation for warning icon
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.30f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(SurfaceDark)
+            .graphicsLayer { this.alpha = alpha }
     ) {
-        // Ambient glow
+        // Centered warm gold glow
         Box(
             modifier = Modifier
-                .size(400.dp)
-                .offset(x = (-100).dp, y = (-100).dp)
-                .background(Brush.radialGradient(listOf(AccentGold.copy(alpha = 0.06f), Color.Transparent)))
+                .size(500.dp)
+                .align(Alignment.Center)
+                .background(Brush.radialGradient(listOf(AccentGold.copy(alpha = 0.05f), Color.Transparent)))
         )
 
         Column(
@@ -64,41 +99,52 @@ fun SessionKickoutScreen(
                 .padding(pad),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header
+            // Header with pulse animation
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(if (isCompact) 36.dp else 48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(AccentGoldSoft),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Devices, null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(if (isCompact) 20.dp else 28.dp)
+                Box(contentAlignment = Alignment.Center) {
+                    // Pulse glow behind icon
+                    Box(
+                        modifier = Modifier
+                            .size(if (isCompact) 44.dp else 56.dp)
+                            .scale(pulseScale)
+                            .clip(CircleShape)
+                            .background(AccentGold.copy(alpha = pulseAlpha))
                     )
+                    Box(
+                        modifier = Modifier
+                            .size(if (isCompact) 36.dp else 48.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(SurfaceElevated),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Warning, null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(if (isCompact) 20.dp else 28.dp)
+                        )
+                    }
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(14.dp))
                 Column {
                     Text(
                         "Device Limit Reached",
                         color = TextPrimary,
-                        fontSize = if (isCompact) 16.sp else 20.sp,
+                        fontSize = if (isCompact) 18.sp else 22.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        "Replace a device to continue on this one",
+                        "Choose a device to replace",
                         color = TextMuted,
-                        fontSize = if (isCompact) 11.sp else 13.sp
+                        fontSize = if (isCompact) 12.sp else 14.sp
                     )
                 }
             }
 
-            Spacer(Modifier.height(if (isCompact) 8.dp else 16.dp))
+            Spacer(Modifier.height(if (isCompact) 10.dp else 20.dp))
 
             // Error
             errorMessage?.let {
@@ -106,15 +152,15 @@ fun SessionKickoutScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(StatusLive.copy(alpha = 0.1f))
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
-                    Icon(Icons.Default.ErrorOutline, null, tint = StatusLive, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Warning, null, tint = StatusLive, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(it, color = StatusLive, fontSize = 12.sp)
+                    Text(it, color = StatusLive, fontSize = 13.sp)
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
             }
 
             if (isLoading) {
@@ -128,8 +174,8 @@ fun SessionKickoutScreen(
                 // Device grid
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = if (isCompact) 220.dp else 260.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     items(sessions) { session ->
@@ -142,18 +188,20 @@ fun SessionKickoutScreen(
                 }
             }
 
-            Spacer(Modifier.height(if (isCompact) 6.dp else 12.dp))
+            Spacer(Modifier.height(if (isCompact) 8.dp else 16.dp))
 
             // Logout button
             var logoutFocused by remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (logoutFocused) StatusLive.copy(alpha = 0.12f) else Color.Transparent)
+                    .fillMaxWidth()
+                    .height(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (logoutFocused) StatusLive.copy(alpha = 0.10f) else Color.Transparent)
                     .border(
                         1.dp,
-                        if (logoutFocused) StatusLive.copy(alpha = 0.6f) else StatusLive.copy(alpha = 0.2f),
-                        RoundedCornerShape(10.dp)
+                        if (logoutFocused) StatusLive else StatusLive.copy(alpha = 0.3f),
+                        RoundedCornerShape(12.dp)
                     )
                     .onFocusChanged { logoutFocused = it.isFocused }
                     .focusable()
@@ -164,16 +212,16 @@ fun SessionKickoutScreen(
                             onLogout(); true
                         } else false
                     }
-                    .clickable { onLogout() }
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                    .clickable { onLogout() },
+                contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Logout, null, tint = if (logoutFocused) StatusLive else StatusLive.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Default.Logout, null, tint = StatusLive, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(10.dp))
                     Text(
                         "Sign Out Instead",
-                        color = if (logoutFocused) StatusLive else StatusLive.copy(alpha = 0.6f),
-                        fontSize = 13.sp,
+                        color = StatusLive,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -190,6 +238,18 @@ private fun DeviceCard(
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
+    // Animated border/bg
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) AccentGold else SurfaceSeparator.copy(alpha = 0.5f),
+        animationSpec = tween(250),
+        label = "cardBorder"
+    )
+    val cardBg by animateColorAsState(
+        targetValue = if (isFocused) AccentGoldSoft.copy(alpha = 0.3f) else Color.Transparent,
+        animationSpec = tween(250),
+        label = "cardBg"
+    )
+
     val icon = when {
         session.deviceType.contains("tv", ignoreCase = true) -> Icons.Default.Tv
         session.deviceType.contains("mobile", ignoreCase = true) -> Icons.Default.PhoneAndroid
@@ -200,19 +260,16 @@ private fun DeviceCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                if (isFocused) 12.dp else 0.dp,
+                if (isFocused) 16.dp else 0.dp,
                 RoundedCornerShape(16.dp),
                 spotColor = AccentGold.copy(alpha = 0.3f)
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(SurfaceElevated, SurfacePrimary)
-                )
-            )
+            .background(SurfaceCard)
+            .background(cardBg)
             .border(
-                if (isFocused) 1.5.dp else 1.dp,
-                if (isFocused) AccentGold else SurfaceSeparator,
+                if (isFocused) 1.5.dp else 0.5.dp,
+                borderColor,
                 RoundedCornerShape(16.dp)
             )
             .onFocusChanged { isFocused = it.isFocused }
@@ -230,48 +287,49 @@ private fun DeviceCard(
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Device icon in circle
                 Box(
                     modifier = Modifier
-                        .size(if (isCompact) 34.dp else 42.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(AccentGoldSoft),
+                        .size(if (isCompact) 36.dp else 40.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceElevated),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(icon, null, tint = AccentGold, modifier = Modifier.size(if (isCompact) 18.dp else 22.dp))
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         session.deviceName.ifEmpty { session.deviceModel },
                         color = TextPrimary,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = if (isCompact) 13.sp else 15.sp,
+                        fontSize = 16.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         session.deviceModel,
                         color = TextMuted,
-                        fontSize = if (isCompact) 10.sp else 12.sp,
+                        fontSize = 13.sp,
                         maxLines = 1
                     )
                 }
             }
 
-            Spacer(Modifier.height(if (isCompact) 6.dp else 10.dp))
+            Spacer(Modifier.height(if (isCompact) 8.dp else 12.dp))
 
             InfoRow("IP Address", session.ipAddress, isCompact)
             InfoRow("Type", session.deviceType.replace("_", " ").replaceFirstChar { it.uppercase() }, isCompact)
             InfoRow("Last Login", session.lastLogin.take(16), isCompact)
 
-            Spacer(Modifier.height(if (isCompact) 8.dp else 12.dp))
+            Spacer(Modifier.height(if (isCompact) 10.dp else 14.dp))
 
-            // Replace button
+            // Replace button - gold gradient, full width
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (isCompact) 32.dp else 38.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .height(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
                         Brush.horizontalGradient(
                             listOf(GradientGoldStart, GradientGoldEnd)
@@ -280,13 +338,13 @@ private fun DeviceCard(
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.SwapHoriz, null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Default.SwapHoriz, null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         "Replace This Device",
                         color = Color.Black,
-                        fontSize = if (isCompact) 11.sp else 13.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = if (isCompact) 13.sp else 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -299,10 +357,10 @@ private fun InfoRow(label: String, value: String, isCompact: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = if (isCompact) 1.dp else 2.dp),
+            .padding(vertical = if (isCompact) 2.dp else 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = TextMuted, fontSize = if (isCompact) 10.sp else 12.sp)
-        Text(value, color = TextSecondary, fontSize = if (isCompact) 10.sp else 12.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = TextMuted, fontSize = if (isCompact) 11.sp else 13.sp)
+        Text(value, color = TextSecondary, fontSize = if (isCompact) 11.sp else 13.sp, fontWeight = FontWeight.Medium)
     }
 }

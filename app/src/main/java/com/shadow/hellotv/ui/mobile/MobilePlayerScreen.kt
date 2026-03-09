@@ -23,11 +23,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -273,9 +277,17 @@ private fun PortraitPlayer(
                         .fillMaxSize()
                         .background(PlayerOverlay.copy(alpha = 0.3f))
                 ) {
-                    // Center: play/pause
+                    // Center: play/pause with scale animation
+                    var playTapped by remember { mutableStateOf(false) }
+                    val playScale by animateFloatAsState(
+                        targetValue = if (playTapped) 0.85f else 1f,
+                        animationSpec = spring(dampingRatio = 0.4f, stiffness = 800f),
+                        label = "playScale",
+                        finishedListener = { playTapped = false }
+                    )
                     IconButton(
                         onClick = {
+                            playTapped = true
                             vm.currentExoPlayer?.let { player ->
                                 player.playWhenReady = !player.playWhenReady
                             }
@@ -283,16 +295,24 @@ private fun PortraitPlayer(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .size(48.dp)
+                            .clip(CircleShape)
+                            .background(PlayerControlBg)
+                            .graphicsLayer(scaleX = playScale, scaleY = playScale)
                     ) {
                         Icon(
-                            if (vm.currentExoPlayer?.playWhenReady == true) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            if (vm.currentExoPlayer?.playWhenReady == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                             contentDescription = "Play/Pause",
                             tint = Color.White,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    // Bottom-left: mute/unmute
+                    // Bottom-left: mute/unmute with animated tint
+                    val muteTint by animateColorAsState(
+                        targetValue = if (isMuted) StatusLive else TextPrimary,
+                        animationSpec = tween(300),
+                        label = "muteTint"
+                    )
                     IconButton(
                         onClick = {
                             isMuted = !isMuted
@@ -306,14 +326,14 @@ private fun PortraitPlayer(
                             .background(PlayerControlBg)
                     ) {
                         Icon(
-                            if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                            if (isMuted) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
                             contentDescription = if (isMuted) "Unmute" else "Mute",
-                            tint = if (isMuted) StatusLive else TextPrimary,
+                            tint = muteTint,
                             modifier = Modifier.size(22.dp)
                         )
                     }
 
-                    // Bottom-right: fullscreen
+                    // Bottom-right: fullscreen with circle bg
                     IconButton(
                         onClick = { vm.isFullscreen = true },
                         modifier = Modifier
@@ -324,7 +344,7 @@ private fun PortraitPlayer(
                             .background(PlayerControlBg)
                     ) {
                         Icon(
-                            Icons.Default.Fullscreen,
+                            Icons.Rounded.Fullscreen,
                             contentDescription = "Fullscreen",
                             tint = TextPrimary,
                             modifier = Modifier.size(22.dp)
@@ -405,14 +425,22 @@ private fun PortraitPlayer(
 
 @Composable
 private fun LanguageChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val chipBg by animateColorAsState(
+        targetValue = if (selected) AccentGold else Color.Transparent,
+        animationSpec = tween(300), label = "chipBg"
+    )
+    val chipTextColor by animateColorAsState(
+        targetValue = if (selected) Color.Black else TextSecondary,
+        animationSpec = tween(300), label = "chipText"
+    )
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(50))
             .then(
                 if (selected) Modifier
-                    .background(AccentGold)
+                    .background(chipBg)
                 else Modifier
-                    .border(1.dp, SurfaceSeparator, RoundedCornerShape(6.dp))
+                    .border(1.dp, SurfaceSeparator, RoundedCornerShape(50))
                     .background(Color.Transparent)
             )
             .clickable { onClick() }
@@ -420,7 +448,7 @@ private fun LanguageChip(label: String, selected: Boolean, onClick: () -> Unit) 
     ) {
         Text(
             label,
-            color = if (selected) Color.Black else TextSecondary,
+            color = chipTextColor,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
@@ -432,25 +460,34 @@ private fun CategoryItem(name: String, selected: Boolean, onClick: () -> Unit) {
     val displayName = if (name.all { it.isUpperCase() || !it.isLetter() } && name.length <= 3) name
         else name.lowercase().replaceFirstChar { it.uppercase() }
 
+    val accentColor by animateColorAsState(
+        targetValue = if (selected) AccentGold else Color.Transparent,
+        animationSpec = tween(300), label = "catAccent"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) TextPrimary else TextMuted,
+        animationSpec = tween(300), label = "catText"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Gold left border indicator
+        // Gold left border indicator (3dp, rounded)
         Box(
             modifier = Modifier
                 .width(3.dp)
                 .height(32.dp)
                 .background(
-                    if (selected) AccentGold else Color.Transparent,
+                    accentColor,
                     RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)
                 )
         )
         Text(
             displayName,
-            color = if (selected) TextPrimary else TextSecondary,
+            color = textColor,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -468,16 +505,17 @@ private fun PortraitChannelRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val rowBg by animateColorAsState(
+        targetValue = if (isSelected) AccentGold.copy(alpha = 0.10f) else SurfaceCard,
+        animationSpec = tween(300), label = "portraitRowBg"
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(
-                if (isSelected) AccentGold.copy(alpha = 0.10f)
-                else SurfaceCard
-            )
+            .clip(RoundedCornerShape(10.dp))
+            .background(rowBg)
             .then(
-                if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(6.dp))
+                if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(10.dp))
                 else Modifier
             )
             .clickable { onClick() }
@@ -491,18 +529,18 @@ private fun PortraitChannelRow(
                 contentDescription = channel.name,
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceCard)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceCard),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(22.dp))
+                Icon(Icons.Rounded.LiveTv, null, tint = TextMuted, modifier = Modifier.size(22.dp))
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -515,9 +553,9 @@ private fun PortraitChannelRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        // Gold star icon on every row
+        // Gold star / equalizer icon
         Icon(
-            if (isSelected) Icons.Default.Equalizer else Icons.Default.Star,
+            if (isSelected) Icons.Rounded.Equalizer else Icons.Rounded.Star,
             contentDescription = null,
             tint = AccentGold,
             modifier = Modifier.size(18.dp)
@@ -640,7 +678,19 @@ private fun FullscreenPlayer(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.LockOpen, "Unlock", tint = AccentGold, modifier = Modifier.size(22.dp))
+                    val lockPulse by rememberInfiniteTransition(label = "lockPulse").animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "lockPulseScale"
+                    )
+                    Icon(
+                        Icons.Rounded.LockOpen, "Unlock", tint = AccentGold,
+                        modifier = Modifier.size(22.dp).graphicsLayer(scaleX = lockPulse, scaleY = lockPulse)
+                    )
                     Text("Tap to Unlock", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
             }
@@ -662,13 +712,18 @@ private fun FullscreenPlayer(
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val topBarIconTint by animateColorAsState(
+                        targetValue = TextPrimary,
+                        animationSpec = tween(300),
+                        label = "topBarIconTint"
+                    )
                     IconButton(onClick = { vm.isFullscreen = false }) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.White, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Rounded.ArrowBack, "Back", tint = topBarIconTint, modifier = Modifier.size(24.dp))
                     }
                     vm.channels.getOrNull(vm.selectedChannelIndex)?.let { channel ->
                         Text(
                             channel.name,
-                            color = Color.White,
+                            color = TextPrimary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -680,17 +735,17 @@ private fun FullscreenPlayer(
                     // Screen fit/zoom toggle
                     IconButton(onClick = { isFitMode = !isFitMode }) {
                         Icon(
-                            if (isFitMode) Icons.Default.FitScreen else Icons.Default.Crop,
+                            if (isFitMode) Icons.Rounded.FitScreen else Icons.Rounded.Fullscreen,
                             if (isFitMode) "Zoom to Fill" else "Fit to Screen",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            tint = topBarIconTint,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     IconButton(onClick = { vm.isFullscreen = false }) {
-                        Icon(Icons.Default.FullscreenExit, "Exit Fullscreen", tint = Color.White, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Rounded.FullscreenExit, "Exit Fullscreen", tint = topBarIconTint, modifier = Modifier.size(24.dp))
                     }
                     IconButton(onClick = { /* cast placeholder */ }) {
-                        Icon(Icons.Default.Cast, "Cast", tint = Color.White, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Rounded.Cast, "Cast", tint = topBarIconTint, modifier = Modifier.size(24.dp))
                     }
                 }
             }
@@ -710,7 +765,7 @@ private fun FullscreenPlayer(
                     Box(
                         modifier = Modifier
                             .size(42.dp)
-                            .border(1.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                             .clip(CircleShape)
                             .clickable {
                                 vm.currentExoPlayer?.let { p ->
@@ -720,16 +775,25 @@ private fun FullscreenPlayer(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Replay, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Replay, null, tint = Color.White, modifier = Modifier.size(18.dp))
                             Text("10s", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
-                    // Play/Pause - large, clean
+                    // Play/Pause - large with scale animation
+                    var fsPlayTapped by remember { mutableStateOf(false) }
+                    val fsPlayScale by animateFloatAsState(
+                        targetValue = if (fsPlayTapped) 0.85f else 1f,
+                        animationSpec = spring(dampingRatio = 0.4f, stiffness = 800f),
+                        label = "fsPlayScale",
+                        finishedListener = { fsPlayTapped = false }
+                    )
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(56.dp)
+                            .graphicsLayer(scaleX = fsPlayScale, scaleY = fsPlayScale)
                             .clickable {
+                                fsPlayTapped = true
                                 vm.currentExoPlayer?.let { player ->
                                     player.playWhenReady = !player.playWhenReady
                                 }
@@ -737,10 +801,10 @@ private fun FullscreenPlayer(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            if (vm.currentExoPlayer?.playWhenReady == true) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            if (vm.currentExoPlayer?.playWhenReady == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                             "Play/Pause",
                             tint = Color.White,
-                            modifier = Modifier.size(46.dp)
+                            modifier = Modifier.size(50.dp)
                         )
                     }
 
@@ -748,7 +812,7 @@ private fun FullscreenPlayer(
                     Box(
                         modifier = Modifier
                             .size(42.dp)
-                            .border(1.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                             .clip(CircleShape)
                             .clickable {
                                 vm.currentExoPlayer?.let { p ->
@@ -758,7 +822,7 @@ private fun FullscreenPlayer(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Forward10, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Forward10, null, tint = Color.White, modifier = Modifier.size(18.dp))
                             Text("10s", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -789,8 +853,9 @@ private fun FullscreenPlayer(
                     ) {
                         Text(
                             currentTime.format(Date()),
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                         )
                         // Gold progress bar (full = LIVE)
                         Box(
@@ -798,29 +863,31 @@ private fun FullscreenPlayer(
                                 .weight(1f)
                                 .padding(horizontal = 10.dp)
                                 .height(3.dp)
-                                .clip(RoundedCornerShape(2.dp))
+                                .clip(RoundedCornerShape(1.5.dp))
                                 .background(PlayerSeekBarBg)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .fillMaxHeight()
-                                    .clip(RoundedCornerShape(2.dp))
+                                    .clip(RoundedCornerShape(1.5.dp))
                                     .background(PlayerSeekBar)
                             )
-                            // Thumb circle
+                            // Thumb circle with shadow
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
-                                    .size(10.dp)
+                                    .size(12.dp)
+                                    .shadow(4.dp, CircleShape)
                                     .clip(CircleShape)
-                                    .background(PlayerSeekBar)
+                                    .background(AccentGold)
                             )
                         }
                         Text(
                             currentTime.format(Date()),
-                            color = AccentGold,
-                            fontSize = 11.sp
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                         )
                     }
 
@@ -832,14 +899,14 @@ private fun FullscreenPlayer(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        FullscreenBottomButton(Icons.Default.HighQuality, "Quality") {
+                        FullscreenBottomButton(Icons.Rounded.HighQuality, "Quality") {
                             showQualityPanel = !showQualityPanel; showAudioPanel = false
                         }
-                        FullscreenBottomButton(Icons.Default.Lock, "Lock") { isLocked = true; onToggleControls() }
-                        FullscreenBottomButton(Icons.Default.Subtitles, "Audio & Subtitles") {
+                        FullscreenBottomButton(Icons.Rounded.Lock, "Lock") { isLocked = true; onToggleControls() }
+                        FullscreenBottomButton(Icons.Rounded.Audiotrack, "Audio") {
                             showAudioPanel = !showAudioPanel; showQualityPanel = false
                         }
-                        FullscreenBottomButton(Icons.Default.LiveTv, "More Channels") {
+                        FullscreenBottomButton(Icons.Rounded.LiveTv, "Channels") {
                             onChannelPanelChange(!channelPanelOpen); showQualityPanel = false; showAudioPanel = false
                         }
                     }
@@ -861,9 +928,20 @@ private fun FullscreenPlayer(
                     .background(PlayerControlBg)
                     .padding(12.dp)
             ) {
-                Icon(Icons.Default.BrightnessHigh, null, tint = AccentGold, modifier = Modifier.size(28.dp))
+                val brightPulse by rememberInfiniteTransition(label = "brightPulse").animateFloat(
+                    initialValue = 1f, targetValue = 1.08f,
+                    animationSpec = infiniteRepeatable(tween(600), RepeatMode.Reverse),
+                    label = "brightPulseScale"
+                )
+                Icon(Icons.Rounded.BrightnessHigh, null, tint = AccentGold,
+                    modifier = Modifier.size(28.dp).graphicsLayer(scaleX = brightPulse, scaleY = brightPulse))
                 Spacer(Modifier.height(4.dp))
-                Text("${(currentBrightness * 100).toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                val animatedBrightness by animateFloatAsState(
+                    targetValue = currentBrightness * 100f,
+                    animationSpec = tween(200),
+                    label = "animBrightness"
+                )
+                Text("${animatedBrightness.toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -882,24 +960,41 @@ private fun FullscreenPlayer(
                     .background(PlayerControlBg)
                     .padding(12.dp)
             ) {
+                val volPulse by rememberInfiniteTransition(label = "volPulse").animateFloat(
+                    initialValue = 1f, targetValue = 1.08f,
+                    animationSpec = infiniteRepeatable(tween(600), RepeatMode.Reverse),
+                    label = "volPulseScale"
+                )
                 Icon(
-                    if (currentVolume == 0) Icons.Default.VolumeOff
-                    else if (currentVolume < maxVol / 2) Icons.Default.VolumeDown
-                    else Icons.Default.VolumeUp,
-                    null, tint = AccentGold, modifier = Modifier.size(28.dp)
+                    if (currentVolume == 0) Icons.Rounded.VolumeOff
+                    else if (currentVolume < maxVol / 2) Icons.Rounded.VolumeDown
+                    else Icons.Rounded.VolumeUp,
+                    null, tint = AccentGold,
+                    modifier = Modifier.size(28.dp).graphicsLayer(scaleX = volPulse, scaleY = volPulse)
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("${(currentVolume * 100f / maxVol).toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                val animatedVolume by animateFloatAsState(
+                    targetValue = currentVolume * 100f / maxVol,
+                    animationSpec = tween(200),
+                    label = "animVolume"
+                )
+                Text("${animatedVolume.toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
         // ── QUALITY PANEL (floating cards, upper-right like reference) ──
         if (showQualityPanel && !isLocked) {
             Box(modifier = Modifier.fillMaxSize().clickable { showQualityPanel = false })
+        }
+        AnimatedVisibility(
+            visible = showQualityPanel && !isLocked,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 4 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 4 }),
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
                     .padding(top = 48.dp, end = 16.dp, bottom = 80.dp)
                     .fillMaxWidth(0.42f)
                     .verticalScroll(rememberScrollState())
@@ -914,10 +1009,16 @@ private fun FullscreenPlayer(
         // ── AUDIO PANEL (floating cards, upper-right like reference) ──
         if (showAudioPanel && !isLocked) {
             Box(modifier = Modifier.fillMaxSize().clickable { showAudioPanel = false })
+        }
+        AnimatedVisibility(
+            visible = showAudioPanel && !isLocked,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 4 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 4 }),
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
                     .padding(top = 48.dp, end = 16.dp, bottom = 80.dp)
                     .fillMaxWidth(0.42f)
                     .verticalScroll(rememberScrollState())
@@ -960,18 +1061,23 @@ private fun FullscreenPlayer(
 private fun FullscreenBottomButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
+    active: Boolean = false,
     onClick: () -> Unit
 ) {
+    val tint by animateColorAsState(
+        targetValue = if (active) AccentGold else TextSecondary,
+        animationSpec = tween(300),
+        label = "bottomBtnTint"
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Icon(icon, label, tint = Color.White, modifier = Modifier.size(22.dp))
+        Icon(icon, label, tint = tint, modifier = Modifier.size(22.dp))
         Spacer(Modifier.height(2.dp))
-        Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp)
+        Text(label, color = tint, fontSize = 10.sp)
     }
 }
 
@@ -1063,34 +1169,36 @@ private fun FullscreenChannelPanel(
             ) {
                 itemsIndexed(vm.channels) { index, channel ->
                     val isSelected = index == vm.selectedChannelIndex
+                    val rowBg by animateColorAsState(
+                        targetValue = if (isSelected) AccentGold.copy(alpha = 0.10f) else SurfaceCard,
+                        animationSpec = tween(300), label = "panelRowBg"
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (isSelected) AccentGold.copy(alpha = 0.10f)
-                                else SurfaceCard
-                            )
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(rowBg)
                             .then(
-                                if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(6.dp))
+                                if (isSelected) Modifier.border(1.dp, AccentGold, RoundedCornerShape(10.dp))
                                 else Modifier
                             )
                             .clickable { onChannelSelected(index) }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                            .animateItem(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (channel.image.isNotEmpty()) {
                             AsyncImage(
                                 model = channel.image,
                                 contentDescription = channel.name,
-                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(SurfaceCard)
+                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(SurfaceCard)
                             )
                         } else {
                             Box(
-                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(6.dp)).background(SurfaceCard),
+                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(SurfaceCard),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Rounded.LiveTv, null, tint = TextMuted, modifier = Modifier.size(20.dp))
                             }
                         }
                         Spacer(Modifier.width(8.dp))
@@ -1103,7 +1211,7 @@ private fun FullscreenChannelPanel(
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            if (isSelected) Icons.Default.Equalizer else Icons.Default.Star,
+                            if (isSelected) Icons.Rounded.Equalizer else Icons.Rounded.Star,
                             contentDescription = null,
                             tint = AccentGold,
                             modifier = Modifier.size(16.dp)
@@ -1117,25 +1225,33 @@ private fun FullscreenChannelPanel(
 
 @Composable
 private fun PanelCategoryItem(name: String, selected: Boolean, onClick: () -> Unit) {
+    val accentColor by animateColorAsState(
+        targetValue = if (selected) AccentGold else Color.Transparent,
+        animationSpec = tween(300), label = "panelCatAccent"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) TextPrimary else TextMuted,
+        animationSpec = tween(300), label = "panelCatText"
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Gold left border indicator
+        // Gold left border indicator (3dp, rounded)
         Box(
             modifier = Modifier
-                .width(2.5.dp)
+                .width(3.dp)
                 .height(24.dp)
                 .background(
-                    if (selected) AccentGold else Color.Transparent,
+                    accentColor,
                     RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)
                 )
         )
         Text(
             name,
-            color = if (selected) TextPrimary else TextSecondary,
+            color = textColor,
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -1177,11 +1293,16 @@ private fun QualityPanel(
         it.value.type == C.TRACK_TYPE_VIDEO
     } != false
 
+    // Panel title
+    Text("Quality", color = AccentGold, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(bottom = 4.dp))
+
     // Auto option
     TrackOptionCard(
         label = "Auto" + if (isAuto && videoTracks.isNotEmpty()) {
             videoTracks.firstOrNull { it.isSelected }?.let { " (${it.width}×${it.height})" } ?: ""
         } else "",
+        isSelected = isAuto,
         onClick = {
             player?.trackSelectionParameters = player?.trackSelectionParameters
                 ?.buildUpon()?.clearOverridesOfType(C.TRACK_TYPE_VIDEO)?.build() ?: return@TrackOptionCard
@@ -1194,6 +1315,7 @@ private fun QualityPanel(
         Spacer(Modifier.height(8.dp))
         TrackOptionCard(
             label = "${track.width}×${track.height}" + if (track.bitrate > 0) " | ${track.bitrate / 1000} kbps" else "",
+            isSelected = track.isSelected && !isAuto,
             onClick = {
                 val trackGroups = player?.currentTracks?.groups ?: return@TrackOptionCard
                 if (track.groupIndex in trackGroups.indices) {
@@ -1252,12 +1374,16 @@ private fun AudioPanel(
         }
     }
 
+    // Audio title
+    Text("Audio", color = AccentGold, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(bottom = 4.dp))
+
     audioTracks.forEachIndexed { i, track ->
         if (i > 0) Spacer(Modifier.height(8.dp))
         val label = (if (track.language.isNotEmpty()) "${track.label} (${track.language.uppercase()})" else track.label) +
                 (if (track.channels > 0) " | ${track.channels}ch" else "") +
                 (if (track.bitrate > 0) " | ${track.bitrate / 1000}kbps" else "")
-        TrackOptionCard(label = label, onClick = {
+        TrackOptionCard(label = label, isSelected = track.isSelected, onClick = {
             val trackGroups = player?.currentTracks?.groups ?: return@TrackOptionCard
             if (track.groupIndex in trackGroups.indices) {
                 val group = trackGroups[track.groupIndex]
@@ -1269,10 +1395,17 @@ private fun AudioPanel(
         })
     }
 
+    if (subtitleTracks.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+        Text("Subtitles", color = AccentGold, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 4.dp))
+    }
+
     subtitleTracks.forEachIndexed { i, track ->
-        Spacer(Modifier.height(8.dp))
+        if (i > 0) Spacer(Modifier.height(8.dp))
         TrackOptionCard(
             label = track.label + if (track.language.isNotEmpty()) " (${track.language.uppercase()})" else "",
+            isSelected = track.isSelected,
             onClick = {
                 val trackGroups = player?.currentTracks?.groups ?: return@TrackOptionCard
                 if (track.groupIndex in trackGroups.indices) {
@@ -1291,31 +1424,53 @@ private fun AudioPanel(
     }
 }
 
-// Exact match of reference: wide rounded rect, semi-transparent dark bg, play icon + text
+// Track option card with radio-style selection, rounded 16dp, subtle border
 @Composable
 private fun TrackOptionCard(
     label: String,
+    isSelected: Boolean = false,
     onClick: () -> Unit
 ) {
+    val radioColor by animateColorAsState(
+        targetValue = if (isSelected) AccentGold else TextMuted,
+        animationSpec = tween(300),
+        label = "radioColor"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (isSelected) AccentGold else TextSecondary,
+        animationSpec = tween(300),
+        label = "trackTextColor"
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(PlayerControlBg)
+            .border(0.5.dp, SurfaceSeparator.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            Icons.Default.PlayCircle,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.6f),
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(Modifier.width(10.dp))
+        // Radio circle
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .border(1.5.dp, radioColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(AccentGold)
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
         Text(
             label,
-            color = Color.White,
+            color = textColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,

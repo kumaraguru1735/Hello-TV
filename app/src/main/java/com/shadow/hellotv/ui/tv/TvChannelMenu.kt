@@ -1,6 +1,8 @@
 package com.shadow.hellotv.ui.tv
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -63,8 +65,8 @@ fun TvChannelMenu(
                 Brush.horizontalGradient(
                     colors = listOf(
                         TvSurface.copy(alpha = 0.97f),
-                        TvSurface.copy(alpha = 0.95f),
-                        TvSurface.copy(alpha = 0.85f),
+                        TvSurface.copy(alpha = 0.92f),
+                        TvSurface.copy(alpha = 0.70f),
                         Color.Transparent
                     )
                 )
@@ -74,7 +76,7 @@ fun TvChannelMenu(
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Language tabs at top ──
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(bottom = 10.dp)
             ) {
                 item {
@@ -98,7 +100,7 @@ fun TvChannelMenu(
                 // Category column
                 LazyColumn(
                     modifier = Modifier
-                        .width(130.dp)
+                        .width(140.dp)
                         .fillMaxHeight()
                         .padding(end = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -149,7 +151,7 @@ fun TvChannelMenu(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 48.dp)
+                                    .padding(start = 52.dp)
                                     .height(0.5.dp)
                                     .background(TvSeparator.copy(alpha = 0.5f))
                             )
@@ -169,19 +171,41 @@ private fun TvLanguageTab(
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
+    val bgColor by animateColorAsState(
+        targetValue = when {
+            selected -> AccentGold
+            isFocused -> AccentGoldSoft
+            else -> Color.Transparent
+        },
+        animationSpec = tween(200),
+        label = "tabBg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = when {
+            selected -> Color.Black
+            isFocused -> AccentGold
+            else -> TextSecondary
+        },
+        animationSpec = tween(200),
+        label = "tabText"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = when {
+            selected -> Color.Transparent
+            isFocused -> AccentGold
+            else -> SurfaceSeparator
+        },
+        animationSpec = tween(200),
+        label = "tabBorder"
+    )
+
+    val shape = RoundedCornerShape(20.dp)
+
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .then(
-                when {
-                    selected -> Modifier.background(AccentGold)
-                    isFocused -> Modifier
-                        .background(AccentGold.copy(alpha = 0.2f))
-                        .border(1.dp, AccentGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    else -> Modifier
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
-                }
-            )
+            .clip(shape)
+            .background(bgColor)
+            .border(1.dp, borderColor, shape)
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
@@ -189,13 +213,9 @@ private fun TvLanguageTab(
     ) {
         Text(
             label,
-            color = when {
-                selected -> Color.Black
-                isFocused -> AccentGold
-                else -> Color.White.copy(alpha = 0.7f)
-            },
-            fontSize = 13.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            color = textColor,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
     }
 }
@@ -208,13 +228,28 @@ private fun TvCategoryItem(
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
+    val textColor by animateColorAsState(
+        targetValue = when {
+            selected -> TextPrimary
+            isFocused -> AccentGold
+            else -> TextMuted
+        },
+        animationSpec = tween(200),
+        label = "catText"
+    )
+    val bgColor by animateColorAsState(
+        targetValue = when {
+            selected -> AccentGoldSoft
+            isFocused -> AccentGold.copy(alpha = 0.08f)
+            else -> Color.Transparent
+        },
+        animationSpec = tween(200),
+        label = "catBg"
+    )
+
     Text(
         name,
-        color = when {
-            selected -> AccentGold
-            isFocused -> AccentGoldLight
-            else -> Color.White.copy(alpha = 0.4f)
-        },
+        color = textColor,
         fontSize = 14.sp,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         maxLines = 1,
@@ -222,16 +257,11 @@ private fun TvCategoryItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
-            .then(
-                when {
-                    isFocused -> Modifier.background(AccentGold.copy(alpha = 0.08f))
-                    else -> Modifier
-                }
-            )
+            .background(bgColor)
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
     )
 }
 
@@ -243,25 +273,58 @@ private fun TvChannelItem(
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
+    val bgColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> AccentGoldSoft
+            isFocused -> Color.White.copy(alpha = 0.06f)
+            else -> Color.Transparent
+        },
+        animationSpec = tween(200),
+        label = "chBg"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> AccentGold
+            isFocused -> Color.White.copy(alpha = 0.3f)
+            else -> Color.Transparent
+        },
+        animationSpec = tween(200),
+        label = "chBorder"
+    )
+    val borderWidth by animateFloatAsState(
+        targetValue = when {
+            isSelected -> 1.5f
+            isFocused -> 0.5f
+            else -> 0f
+        },
+        animationSpec = tween(200),
+        label = "chBorderWidth"
+    )
+    val nameColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> TextPrimary
+            isFocused -> TextPrimary
+            else -> TextSecondary
+        },
+        animationSpec = tween(200),
+        label = "chName"
+    )
+
+    val shape = RoundedCornerShape(8.dp)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(shape)
+            .background(bgColor)
             .then(
-                when {
-                    isSelected -> Modifier
-                        .border(1.dp, AccentGold, RoundedCornerShape(6.dp))
-                        .background(AccentGold.copy(alpha = 0.08f))
-                    isFocused -> Modifier
-                        .background(AccentGold.copy(alpha = 0.06f))
-                        .border(1.dp, AccentGold.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                    else -> Modifier
-                }
+                if (borderWidth > 0f) Modifier.border(borderWidth.dp, borderColor, shape)
+                else Modifier
             )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Channel image
@@ -270,27 +333,27 @@ private fun TvChannelItem(
                 model = channel.image,
                 contentDescription = channel.name,
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(Color.White.copy(alpha = 0.05f))
             )
         } else {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.05f)),
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(SurfaceCard),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(20.dp))
             }
         }
 
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(12.dp))
 
         Text(
             channel.name,
-            color = if (isSelected) Color.White else if (isFocused) Color.White else Color.White.copy(alpha = 0.7f),
+            color = nameColor,
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -305,7 +368,7 @@ private fun TvChannelItem(
                 Icons.Default.Equalizer,
                 contentDescription = "Playing",
                 tint = AccentGold,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }

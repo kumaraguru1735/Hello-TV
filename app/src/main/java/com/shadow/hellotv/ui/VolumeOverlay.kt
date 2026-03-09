@@ -3,6 +3,7 @@ package com.shadow.hellotv.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -71,6 +72,13 @@ fun VolumeOverlay(
         label = "volume"
     )
 
+    // Smooth number animation for volume percentage display
+    val animatedPercent by animateIntAsState(
+        targetValue = if (maxVolume > 0) (currentVolume * 100) / maxVolume else 0,
+        animationSpec = tween(durationMillis = 200),
+        label = "volumePercent"
+    )
+
     AnimatedVisibility(
         visible = show,
         enter = fadeIn(animationSpec = tween(300)) + scaleIn(
@@ -128,7 +136,7 @@ fun VolumeOverlay(
                             )
 
                             Text(
-                                text = "${(animatedVolume * 100).toInt()}%",
+                                text = "$animatedPercent%",
                                 color = Color.White,
                                 fontSize = if (isTV) 28.sp else 24.sp,
                                 fontWeight = FontWeight.Black,
@@ -181,7 +189,7 @@ fun VolumeOverlay(
                         )
 
                         Text(
-                            text = "${(animatedVolume * 100).toInt()}%",
+                            text = "$animatedPercent%",
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black
@@ -193,7 +201,7 @@ fun VolumeOverlay(
     }
 }
 
-/* ---------- Icon with glow (smaller) ---------- */
+/* ---------- Icon with glow ---------- */
 @Composable
 fun VolumeIconWithGlow(
     currentVolume: Int,
@@ -202,15 +210,17 @@ fun VolumeIconWithGlow(
     size: androidx.compose.ui.unit.Dp,
     iconSize: androidx.compose.ui.unit.Dp
 ) {
+    val isMutedOrZero = isMuted || currentVolume == 0
+
     Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
-        // glow
+        // Glow effect
         Box(
             modifier = Modifier
                 .size(size + 6.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        if (isMuted || currentVolume == 0)
+                        if (isMutedOrZero)
                             listOf(StatusLive.copy(0.3f), Color.Transparent)
                         else
                             listOf(AccentGold.copy(0.3f), Color.Transparent)
@@ -224,19 +234,19 @@ fun VolumeIconWithGlow(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        if (isMuted || currentVolume == 0)
+                        if (isMutedOrZero)
                             listOf(StatusLive.copy(0.3f), StatusLive.copy(0.2f))
                         else
-                            listOf(AccentGold.copy(0.3f), GradientGoldEnd.copy(0.2f))
+                            listOf(GradientGoldStart.copy(0.3f), GradientGoldEnd.copy(0.2f))
                     )
                 )
                 .border(
                     1.5.dp,
                     Brush.linearGradient(
-                        if (isMuted || currentVolume == 0)
+                        if (isMutedOrZero)
                             listOf(StatusLive.copy(0.6f), StatusLive.copy(0.4f))
                         else
-                            listOf(AccentGold.copy(0.6f), GradientGoldEnd.copy(0.4f))
+                            listOf(GradientGoldStart.copy(0.6f), GradientGoldEnd.copy(0.4f))
                     ),
                     CircleShape
                 ),
@@ -244,19 +254,19 @@ fun VolumeIconWithGlow(
         ) {
             Icon(
                 imageVector = when {
-                    isMuted || currentVolume == 0 -> Icons.Default.VolumeOff
+                    isMutedOrZero -> Icons.Default.VolumeOff
                     currentVolume < maxVolume / 3 -> Icons.Default.VolumeDown
                     else -> Icons.Default.VolumeUp
                 },
                 contentDescription = "Volume",
-                tint = if (isMuted || currentVolume == 0) StatusLive else TextPrimary,
+                tint = if (isMutedOrZero) StatusLive else AccentGold,
                 modifier = Modifier.size(iconSize)
             )
         }
     }
 }
 
-/* ---------- Circular indicator (smaller) ---------- */
+/* ---------- Circular indicator ---------- */
 @Composable
 fun CircularVolumeIndicator(
     progress: Float,
@@ -307,7 +317,7 @@ fun CircularVolumeIndicator(
             Icon(
                 imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
                 contentDescription = "Volume",
-                tint = if (isMuted) StatusLive else TextPrimary,
+                tint = if (isMuted) StatusLive else AccentGold,
                 modifier = Modifier.size(size * 0.25f)
             )
         }

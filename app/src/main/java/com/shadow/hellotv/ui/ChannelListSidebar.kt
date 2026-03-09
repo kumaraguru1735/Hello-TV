@@ -26,8 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -67,139 +64,120 @@ fun ChannelListSidebar(
     val configuration = LocalConfiguration.current
     val isTV = configuration.screenWidthDp.dp >= 1000.dp
 
-    Card(
+    Box(
         modifier = modifier
-            .shadow(
-                elevation = 32.dp,
-                shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-                spotColor = AccentGold.copy(alpha = 0.3f)
-            ),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+            .fillMaxSize()
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        SurfacePrimary,
+                        SurfacePrimary,
+                        SurfacePrimary.copy(alpha = 0.95f),
+                        Color.Transparent
+                    ),
+                    startX = 0f,
+                    endX = Float.POSITIVE_INFINITY
+                )
+            )
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SurfacePrimary,
-                            SurfaceCard,
-                            SurfacePrimary
-                        )
-                    )
-                )
-                .border(
-                    width = 1.dp,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            AccentGold.copy(alpha = 0.3f),
-                            GradientGoldEnd.copy(alpha = 0.2f),
-                            AccentGold.copy(alpha = 0.3f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
-                )
+                .padding(if (isTV) 28.dp else 20.dp)
         ) {
-            Column(
+            // Header
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Channels",
+                    color = TextPrimary,
+                    fontSize = if (isTV) 32.sp else 28.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${channels.size} available",
+                    color = TextMuted,
+                    fontSize = if (isTV) 15.sp else 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(if (isTV) 20.dp else 16.dp))
+
+            // Category filter chips
+            if (categories.isNotEmpty()) {
+                FilterChipsRow(
+                    items = categories.map { it.id to it.name },
+                    selectedId = selectedCategoryId,
+                    onSelected = onCategorySelected,
+                    isTV = isTV
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Language filter chips
+            if (languages.isNotEmpty()) {
+                FilterChipsRow(
+                    items = languages.map { it.id to it.name },
+                    selectedId = selectedLanguageId,
+                    onSelected = onLanguageSelected,
+                    isTV = isTV
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Search box - AccentGold cursor/focus border, rounded 12dp
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(if (isTV) 28.dp else 20.dp)
+                    .fillMaxWidth()
+                    .height(if (isTV) 54.dp else 48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SurfaceInput)
+                    .border(1.dp, AccentGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
-                // Header
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Channels",
-                        color = TextPrimary,
-                        fontSize = if (isTV) 32.sp else 28.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${channels.size} available",
-                        color = TextMuted,
-                        fontSize = if (isTV) 15.sp else 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(if (isTV) 20.dp else 16.dp))
-
-                // Category filter chips
-                if (categories.isNotEmpty()) {
-                    FilterChipsRow(
-                        items = categories.map { it.id to it.name },
-                        selectedId = selectedCategoryId,
-                        onSelected = onCategorySelected,
-                        isTV = isTV
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Language filter chips
-                if (languages.isNotEmpty()) {
-                    FilterChipsRow(
-                        items = languages.map { it.id to it.name },
-                        selectedId = selectedLanguageId,
-                        onSelected = onLanguageSelected,
-                        isTV = isTV
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Search box (decorative)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(if (isTV) 54.dp else 48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(SurfaceInput)
-                        .border(1.dp, SurfaceSeparator, RoundedCornerShape(16.dp))
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = TextDisabled,
-                            modifier = Modifier.size(if (isTV) 24.dp else 20.dp)
-                        )
-                        Text(
-                            text = "Search channels...",
-                            color = TextDisabled,
-                            fontSize = if (isTV) 16.sp else 15.sp
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = AccentGold.copy(alpha = 0.6f),
+                        modifier = Modifier.size(if (isTV) 24.dp else 20.dp)
+                    )
+                    Text(
+                        text = "Search channels...",
+                        color = TextDisabled,
+                        fontSize = if (isTV) 16.sp else 15.sp
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
+            Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
-                HorizontalDivider(color = SurfaceSeparator, thickness = 1.dp)
+            HorizontalDivider(color = SurfaceSeparator, thickness = 1.dp)
 
-                Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
+            Spacer(modifier = Modifier.height(if (isTV) 16.dp else 12.dp))
 
-                // Channel list
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(if (isTV) 12.dp else 10.dp)
-                ) {
-                    itemsIndexed(channels) { index, channel ->
-                        ChannelListItemComposable(
-                            channel = channel,
-                            channelNumber = index + 1,
-                            isSelected = index == selectedChannelIndex,
-                            isTV = isTV,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .animateContentSize()
-                                .clickable { onChannelSelected(index) }
-                        )
-                    }
+            // Channel list
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(if (isTV) 8.dp else 6.dp)
+            ) {
+                itemsIndexed(channels) { index, channel ->
+                    ChannelListItemComposable(
+                        channel = channel,
+                        channelNumber = index + 1,
+                        isSelected = index == selectedChannelIndex,
+                        isTV = isTV,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize()
+                            .clickable { onChannelSelected(index) }
+                    )
                 }
             }
         }
@@ -252,7 +230,7 @@ private fun FilterChip(
             .clip(RoundedCornerShape(20.dp))
             .background(
                 if (isSelected) Brush.horizontalGradient(listOf(GradientGoldStart, GradientGoldEnd))
-                else Brush.horizontalGradient(listOf(Color.White.copy(0.08f), Color.White.copy(0.06f)))
+                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
             )
             .then(
                 if (!isSelected) Modifier.border(1.dp, SurfaceSeparator, RoundedCornerShape(20.dp))
@@ -279,145 +257,122 @@ fun ChannelListItemComposable(
     isTV: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Box(
         modifier = modifier
-            .shadow(
-                elevation = if (isSelected) 12.dp else 2.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = if (isSelected) AccentGold.copy(alpha = 0.4f) else Color.Transparent
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.04f)
-        ),
-        shape = RoundedCornerShape(16.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (isSelected) AccentGold.copy(alpha = 0.1f) else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(1.dp, AccentGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                else Modifier
+            )
+            .padding(if (isTV) 12.dp else 10.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    if (isSelected) {
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                AccentGold.copy(alpha = 0.2f),
-                                GradientGoldEnd.copy(alpha = 0.1f)
-                            )
-                        )
-                    } else {
-                        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                    }
-                )
-                .border(
-                    width = if (isSelected) 1.5.dp else 0.dp,
-                    color = if (isSelected) AccentGold.copy(alpha = 0.5f) else Color.Transparent,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(if (isTV) 16.dp else 14.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (isTV) 14.dp else 12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(if (isTV) 16.dp else 14.dp)
+            // Channel number - AccentGold circle badge on selected
+            Box(
+                modifier = Modifier
+                    .size(if (isTV) 36.dp else 32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) {
+                            Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
+                        } else {
+                            Brush.linearGradient(
+                                listOf(Color.White.copy(0.08f), Color.White.copy(0.05f))
+                            )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                // Channel number
-                Box(
+                Text(
+                    text = "$channelNumber",
+                    color = if (isSelected) Color.Black else TextMuted,
+                    fontSize = if (isTV) 14.sp else 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Channel logo
+            Box(
+                modifier = Modifier
+                    .size(if (isTV) 44.dp else 40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(SurfaceElevated)
+                    .border(
+                        width = if (isSelected) 1.dp else 0.5.dp,
+                        color = if (isSelected) AccentGold.copy(0.5f)
+                        else Color.White.copy(0.06f),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = channel.image,
+                    contentDescription = "Channel Logo",
                     modifier = Modifier
-                        .size(if (isTV) 44.dp else 40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isSelected) {
-                                Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
-                            } else {
-                                Brush.linearGradient(
-                                    listOf(Color.White.copy(0.12f), Color.White.copy(0.08f))
-                                )
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$channelNumber",
-                        color = if (isSelected) Color.Black else Color.White,
-                        fontSize = if (isTV) 16.sp else 15.sp,
-                        fontWeight = FontWeight.Bold
+                        .size(if (isTV) 38.dp else 34.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                if (channel.image.isEmpty()) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = TextDisabled,
+                        modifier = Modifier.size(if (isTV) 22.dp else 20.dp)
                     )
                 }
+            }
 
-                // Channel logo
-                Box(
-                    modifier = Modifier
-                        .size(if (isTV) 56.dp else 52.dp)
-                        .clip(CircleShape)
-                        .background(SurfaceElevated)
-                        .border(
-                            width = 1.5.dp,
-                            color = if (isSelected) AccentGold.copy(0.5f)
-                            else Color.White.copy(0.08f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AsyncImage(
-                        model = channel.image,
-                        contentDescription = "Channel Logo",
-                        modifier = Modifier
-                            .size(if (isTV) 48.dp else 44.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
+            // Channel info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = channel.name,
+                    color = if (isSelected) AccentGold else TextPrimary,
+                    fontSize = if (isTV) 15.sp else 14.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-                    if (channel.image.isEmpty()) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = TextDisabled,
-                            modifier = Modifier.size(if (isTV) 24.dp else 22.dp)
-                        )
-                    }
-                }
-
-                // Channel info
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                if (channel.description.isNotEmpty()) {
                     Text(
-                        text = channel.name,
-                        color = TextPrimary,
-                        fontSize = if (isTV) 17.sp else 16.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                        text = channel.description.uppercase(),
+                        color = if (isSelected) TextSecondary else TextMuted,
+                        fontSize = if (isTV) 11.sp else 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    if (channel.description.isNotEmpty()) {
-                        Text(
-                            text = channel.description.uppercase(),
-                            color = if (isSelected) TextSecondary else TextMuted,
-                            fontSize = if (isTV) 12.sp else 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
+            }
 
-                // DRM indicator
-                if (!channel.drmLicenceUrl.isNullOrEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .size(if (isTV) 32.dp else 30.dp)
-                            .clip(CircleShape)
-                            .background(StatusWarning.copy(alpha = 0.15f))
-                            .border(1.dp, StatusWarning.copy(alpha = 0.4f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "DRM Protected",
-                            tint = StatusWarning,
-                            modifier = Modifier.size(if (isTV) 16.dp else 15.dp)
-                        )
-                    }
+            // DRM indicator
+            if (!channel.drmLicenceUrl.isNullOrEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(if (isTV) 28.dp else 26.dp)
+                        .clip(CircleShape)
+                        .background(StatusWarning.copy(alpha = 0.12f))
+                        .border(0.5.dp, StatusWarning.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "DRM Protected",
+                        tint = StatusWarning,
+                        modifier = Modifier.size(if (isTV) 14.dp else 13.dp)
+                    )
                 }
             }
         }

@@ -1,9 +1,11 @@
 package com.shadow.hellotv.ui.mobile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -58,17 +60,22 @@ fun MobileSessionSheet(
         dragHandle = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .width(40.dp)
+                        .width(32.dp)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(TextMuted)
+                        .background(AccentGold)
                 )
-                Spacer(Modifier.height(8.dp))
-                Text("Active Sessions", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Active Sessions",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     ) {
@@ -80,10 +87,15 @@ fun MobileSessionSheet(
         ) {
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = AccentGold)
+                    CircularProgressIndicator(
+                        color = AccentGold,
+                        strokeWidth = 2.dp
+                    )
                 }
             } else if (error != null) {
                 Text(
@@ -92,13 +104,36 @@ fun MobileSessionSheet(
                     fontSize = 14.sp,
                     modifier = Modifier.padding(16.dp)
                 )
+            } else if (sessions.isEmpty()) {
+                // Empty state
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Devices,
+                        contentDescription = null,
+                        tint = TextMuted,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "No active sessions",
+                        color = TextMuted,
+                        fontSize = 14.sp
+                    )
+                }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(sessions) { session ->
+                        val isCurrent = session.deviceId == vm.sessionManager.getDeviceId()
                         SessionCard(
                             session = session,
+                            isCurrent = isCurrent,
                             onKill = {
                                 scope.launch {
                                     val token = vm.sessionManager.sessionToken ?: return@launch
@@ -124,6 +159,7 @@ fun MobileSessionSheet(
 @Composable
 private fun SessionCard(
     session: SessionInfo,
+    isCurrent: Boolean,
     onKill: () -> Unit
 ) {
     val icon = when {
@@ -134,7 +170,12 @@ private fun SessionCard(
 
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceCard)
+        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+        border = if (isCurrent) {
+            androidx.compose.foundation.BorderStroke(1.5.dp, AccentGold)
+        } else {
+            androidx.compose.foundation.BorderStroke(0.5.dp, SurfaceSeparator)
+        }
     ) {
         Row(
             modifier = Modifier
@@ -142,49 +183,74 @@ private fun SessionCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Device icon
+            // Device icon in circle
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(AccentGold.copy(alpha = 0.12f)),
+                    .clip(CircleShape)
+                    .background(SurfaceElevated),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = AccentGold, modifier = Modifier.size(22.dp))
+                Icon(icon, null, tint = AccentGold, modifier = Modifier.size(24.dp))
             }
 
             Spacer(Modifier.width(12.dp))
 
             // Info
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        session.deviceName.ifEmpty { session.deviceModel },
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isCurrent) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(AccentGold)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                "Current",
+                                color = Color.Black,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    session.deviceName.ifEmpty { session.deviceModel },
-                    color = TextPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    "${session.deviceType.replace("_", " ").replaceFirstChar { it.uppercase() }} • ${session.ipAddress}",
+                    "${session.deviceType.replace("_", " ").replaceFirstChar { it.uppercase() }} ${session.ipAddress}",
                     color = TextMuted,
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     session.lastLogin.take(16),
-                    color = TextDisabled,
-                    fontSize = 10.sp
+                    color = TextMuted,
+                    fontSize = 12.sp
                 )
             }
 
-            // Remove button
-            TextButton(
-                onClick = onKill,
-                colors = ButtonDefaults.textButtonColors(contentColor = StatusLive)
-            ) {
-                Text("Remove", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            // Remove button (not for current session)
+            if (!isCurrent) {
+                OutlinedButton(
+                    onClick = onKill,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusLive),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, StatusLive.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("Remove", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

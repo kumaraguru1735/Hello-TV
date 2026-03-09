@@ -1,9 +1,13 @@
 package com.shadow.hellotv.ui.mobile
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -38,16 +43,16 @@ fun MobileSettingsSheet(
         dragHandle = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .width(40.dp)
+                        .width(32.dp)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(TextMuted)
+                        .background(AccentGold)
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text("Settings", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
@@ -58,7 +63,7 @@ fun MobileSettingsSheet(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // ── Profile card ──
+            // -- Profile card --
             item {
                 Card(
                     shape = RoundedCornerShape(14.dp),
@@ -68,14 +73,25 @@ fun MobileSettingsSheet(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Avatar: gold gradient circle with initial
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(AccentGold.copy(alpha = 0.15f)),
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .border(2.dp, AccentGold, CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(GradientGoldStart, GradientGoldEnd)
+                                    )
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Person, null, tint = AccentGold, modifier = Modifier.size(24.dp))
+                            Text(
+                                (vm.subscriber?.name?.firstOrNull()?.uppercase() ?: "U"),
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -83,35 +99,46 @@ fun MobileSettingsSheet(
                                 vm.subscriber?.name ?: "User",
                                 color = TextPrimary,
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
+                                fontSize = 16.sp
                             )
                             Text(
                                 vm.subscriber?.phone ?: "",
-                                color = TextMuted,
-                                fontSize = 12.sp
+                                color = TextSecondary,
+                                fontSize = 13.sp
                             )
                         }
                         vm.subscriptionInfo?.let {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(StatusSuccess.copy(alpha = 0.15f))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    it.status.replaceFirstChar { c -> c.uppercase() },
-                                    color = StatusSuccess,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                            Column(horizontalAlignment = Alignment.End) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(StatusSuccess.copy(alpha = 0.15f))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        it.status.replaceFirstChar { c -> c.uppercase() },
+                                        color = StatusSuccess,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                it.expiredAt?.let { expiry ->
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        expiry,
+                                        color = AccentGold,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ── Video Quality ──
-            item { SectionLabel("Video Quality") }
+            // -- Video Quality --
+            item { SectionLabel("VIDEO QUALITY") }
             item {
                 TrackItem("Auto (Adaptive)", true) {
                     vm.currentExoPlayer?.let { player ->
@@ -141,11 +168,11 @@ fun MobileSettingsSheet(
                 }
             }
 
-            // ── Audio ──
-            item { SectionLabel("Audio") }
+            // -- Audio --
+            item { SectionLabel("AUDIO") }
             val audioGroups = vm.currentExoPlayer?.currentTracks?.groups?.filter { it.type == C.TRACK_TYPE_AUDIO } ?: emptyList()
             if (audioGroups.isEmpty()) {
-                item { Text("No audio tracks available", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(8.dp)) }
+                item { Text("No audio tracks available", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
             }
             audioGroups.forEach { group ->
                 for (i in 0 until group.length) {
@@ -167,13 +194,19 @@ fun MobileSettingsSheet(
                 }
             }
 
-            // ── Actions ──
+            // -- Actions --
             item { Spacer(Modifier.height(4.dp)) }
             item {
-                ActionRow("Manage Sessions", Icons.Default.Devices) {
+                HorizontalDivider(thickness = 0.5.dp, color = SurfaceSeparator)
+            }
+            item {
+                ActionRow("Manage Sessions", Icons.Default.Devices, tint = AccentGold) {
                     vm.showSessionManager = true
                     onDismiss()
                 }
+            }
+            item {
+                HorizontalDivider(thickness = 0.5.dp, color = SurfaceSeparator)
             }
             item {
                 ActionRow("Sign Out", Icons.Default.Logout, tint = StatusLive) {
@@ -191,33 +224,67 @@ private fun SectionLabel(title: String) {
     Text(
         title,
         color = AccentGold,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5.sp,
-        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp, start = 4.dp)
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
     )
 }
 
 @Composable
 private fun TrackItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    val textColor by animateColorAsState(
+        targetValue = if (isSelected) AccentGold else TextSecondary,
+        animationSpec = tween(200),
+        label = "trackText"
+    )
+    val circleColor by animateColorAsState(
+        targetValue = if (isSelected) AccentGold else TextMuted,
+        animationSpec = tween(200),
+        label = "trackCircle"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) AccentGold.copy(alpha = 0.12f) else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Radio circle
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .then(
+                    if (isSelected) {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(Color.Transparent)
+                            .border(1.5.dp, circleColor, CircleShape)
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .border(1.5.dp, circleColor, CircleShape)
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(AccentGold)
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
         Text(
             label,
-            color = if (isSelected) AccentGoldLight else TextPrimary,
+            color = textColor,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
-        if (isSelected) {
-            Icon(Icons.Default.CheckCircle, null, tint = AccentGold, modifier = Modifier.size(18.dp))
-        }
     }
 }
 
@@ -226,23 +293,13 @@ private fun ActionRow(label: String, icon: ImageVector, tint: Color = TextSecond
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceCard)
             .clickable { onClick() }
-            .padding(14.dp),
+            .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(tint.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = tint, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Icon(icon, null, tint = tint, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(14.dp))
+        Text(label, color = if (tint == StatusLive) StatusLive else TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.weight(1f))
         Icon(Icons.Default.ChevronRight, null, tint = TextDisabled, modifier = Modifier.size(18.dp))
     }

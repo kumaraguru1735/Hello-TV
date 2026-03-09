@@ -1,7 +1,9 @@
 package com.shadow.hellotv.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -24,7 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -75,6 +77,11 @@ fun PlayerSettingsPanel(
     var audioTracks by remember { mutableStateOf<List<TrackInfo>>(emptyList()) }
     var subtitleTracks by remember { mutableStateOf<List<TrackInfo>>(emptyList()) }
 
+    // Expandable sections state
+    var qualityExpanded by remember { mutableStateOf(false) }
+    var audioExpanded by remember { mutableStateOf(false) }
+    var subtitlesExpanded by remember { mutableStateOf(false) }
+
     // Update tracks when player state changes
     LaunchedEffect(exoPlayer, show) {
         if (exoPlayer != null && show) {
@@ -100,52 +107,37 @@ fun PlayerSettingsPanel(
         ),
         modifier = modifier
     ) {
-        Card(
+        // Panel background: gradient from right (SurfacePrimary -> transparent left edge)
+        Box(
             modifier = Modifier
                 .width(if (isTV) 360.dp else 320.dp)
                 .fillMaxHeight()
-                .padding(vertical = 12.dp, horizontal = 8.dp)
-                .shadow(
-                    24.dp,
-                    RoundedCornerShape(24.dp),
-                    spotColor = AccentGold.copy(0.3f)
-                ),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            shape = RoundedCornerShape(24.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            SurfacePrimary.copy(0.95f),
+                            SurfacePrimary
+                        ),
+                        startX = 0f,
+                        endX = 100f
+                    )
+                )
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                SurfacePrimary.copy(0.97f),
-                                SurfaceCard.copy(0.97f),
-                                SurfacePrimary.copy(0.97f)
-                            )
-                        )
-                    )
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                AccentGold.copy(0.3f),
-                                GradientGoldEnd.copy(0.2f),
-                                AccentGold.copy(0.3f)
-                            )
-                        ),
-                        RoundedCornerShape(24.dp)
-                    )
+                    .background(SurfacePrimary.copy(0.97f))
             ) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     // -- Profile Section --
-                    item {
-                        if (subscriber != null) {
+                    if (subscriber != null) {
+                        item {
                             ProfileSection(
                                 subscriber = subscriber,
                                 subscriptionStatus = subscriptionStatus,
@@ -154,184 +146,235 @@ fun PlayerSettingsPanel(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             SettingsDivider()
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
 
                     // -- Now Playing --
-                    item {
-                        if (channel != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            SectionHeader("Now Playing", Icons.Default.PlayCircle)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            NowPlayingCard(channel, isTV)
+                    if (channel != null) {
+                        item {
+                            NowPlayingRow(channel, isTV)
                             Spacer(modifier = Modifier.height(4.dp))
                             SettingsDivider()
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
 
-                    // -- Video Quality --
+                    // -- Quality Section (expandable) --
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        SectionHeader("Video Quality", Icons.Default.HighQuality)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        val currentQuality = videoTracks.firstOrNull { it.isSelected }?.format?.let {
+                            when {
+                                it.height >= 2160 -> "4K"
+                                it.height >= 1080 -> "1080p"
+                                it.height >= 720 -> "720p"
+                                it.height >= 480 -> "480p"
+                                else -> "Auto"
+                            }
+                        } ?: "Auto"
+
+                        SettingsRow(
+                            icon = Icons.Default.HighQuality,
+                            title = "Quality",
+                            value = currentQuality,
+                            isExpanded = qualityExpanded,
+                            onClick = { qualityExpanded = !qualityExpanded }
+                        )
                     }
 
-                    if (videoTracks.isEmpty()) {
+                    // Quality sub-options
+                    if (qualityExpanded) {
                         item {
-                            TrackOptionItem(
+                            RadioOptionItem(
                                 label = "Auto",
                                 subtitle = "Best quality for your connection",
-                                isSelected = true,
-                                onClick = {}
-                            )
-                        }
-                    } else {
-                        // Auto option
-                        item {
-                            TrackOptionItem(
-                                label = "Auto",
-                                subtitle = "Adaptive quality",
-                                isSelected = videoTracks.none { it.isSelected },
+                                isSelected = videoTracks.isEmpty() || videoTracks.none { it.isSelected },
                                 onClick = {
                                     exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
                                         ?.buildUpon()
                                         ?.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                                        ?.build() ?: return@TrackOptionItem
+                                        ?.build() ?: return@RadioOptionItem
                                 }
                             )
                         }
-                        items(videoTracks) { track ->
-                            val resolution = track.format?.let { "${it.width}x${it.height}" } ?: ""
-                            val bitrate = track.format?.bitrate?.let {
-                                if (it > 1_000_000) "${it / 1_000_000}Mbps" else "${it / 1000}Kbps"
-                            } ?: ""
-                            val label = track.format?.let {
-                                when {
-                                    it.height >= 2160 -> "4K Ultra HD"
-                                    it.height >= 1080 -> "Full HD 1080p"
-                                    it.height >= 720 -> "HD 720p"
-                                    it.height >= 480 -> "SD 480p"
-                                    it.height >= 360 -> "Low 360p"
-                                    else -> resolution
-                                }
-                            } ?: track.label
+                        if (videoTracks.isNotEmpty()) {
+                            items(videoTracks) { track ->
+                                val resolution = track.format?.let { "${it.width}x${it.height}" } ?: ""
+                                val bitrate = track.format?.bitrate?.let {
+                                    if (it > 1_000_000) "${it / 1_000_000}Mbps" else "${it / 1000}Kbps"
+                                } ?: ""
+                                val label = track.format?.let {
+                                    when {
+                                        it.height >= 2160 -> "4K Ultra HD"
+                                        it.height >= 1080 -> "Full HD 1080p"
+                                        it.height >= 720 -> "HD 720p"
+                                        it.height >= 480 -> "SD 480p"
+                                        it.height >= 360 -> "Low 360p"
+                                        else -> resolution
+                                    }
+                                } ?: track.label
 
-                            TrackOptionItem(
-                                label = label,
-                                subtitle = "$resolution ${if (bitrate.isNotEmpty()) "| $bitrate" else ""}".trim(),
-                                isSelected = track.isSelected,
-                                onClick = {
-                                    selectTrack(exoPlayer, C.TRACK_TYPE_VIDEO, track.groupIndex, track.trackIndex)
-                                }
-                            )
+                                RadioOptionItem(
+                                    label = label,
+                                    subtitle = "$resolution ${if (bitrate.isNotEmpty()) "| $bitrate" else ""}".trim(),
+                                    isSelected = track.isSelected,
+                                    onClick = {
+                                        selectTrack(exoPlayer, C.TRACK_TYPE_VIDEO, track.groupIndex, track.trackIndex)
+                                    }
+                                )
+                            }
                         }
                     }
 
-                    item { SettingsDivider() }
-
-                    // -- Audio Track --
+                    // -- Audio Section (expandable) --
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        SectionHeader("Audio", Icons.Default.Audiotrack)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        val currentAudio = audioTracks.firstOrNull { it.isSelected }?.let { track ->
+                            track.format?.language?.let { java.util.Locale(it).displayLanguage }
+                                ?: track.label.ifEmpty { "Default" }
+                        } ?: "Default"
+
+                        SettingsRow(
+                            icon = Icons.Default.Audiotrack,
+                            title = "Audio",
+                            value = currentAudio,
+                            isExpanded = audioExpanded,
+                            onClick = { audioExpanded = !audioExpanded }
+                        )
                     }
 
-                    if (audioTracks.isEmpty()) {
-                        item {
-                            TrackOptionItem(
-                                label = "Default",
-                                subtitle = "Primary audio track",
-                                isSelected = true,
-                                onClick = {}
-                            )
-                        }
-                    } else {
-                        items(audioTracks) { track ->
-                            val lang = track.format?.language?.let { langCode ->
-                                java.util.Locale(langCode).displayLanguage
-                            } ?: ""
-                            val channels = track.format?.channelCount?.let {
-                                when (it) {
-                                    1 -> "Mono"
-                                    2 -> "Stereo"
-                                    6 -> "5.1 Surround"
-                                    8 -> "7.1 Surround"
-                                    else -> "${it}ch"
-                                }
-                            } ?: ""
+                    if (audioExpanded) {
+                        if (audioTracks.isEmpty()) {
+                            item {
+                                RadioOptionItem(
+                                    label = "Default",
+                                    subtitle = "Primary audio track",
+                                    isSelected = true,
+                                    onClick = {}
+                                )
+                            }
+                        } else {
+                            items(audioTracks) { track ->
+                                val lang = track.format?.language?.let { langCode ->
+                                    java.util.Locale(langCode).displayLanguage
+                                } ?: ""
+                                val channels = track.format?.channelCount?.let {
+                                    when (it) {
+                                        1 -> "Mono"
+                                        2 -> "Stereo"
+                                        6 -> "5.1 Surround"
+                                        8 -> "7.1 Surround"
+                                        else -> "${it}ch"
+                                    }
+                                } ?: ""
 
-                            TrackOptionItem(
-                                label = track.label.ifEmpty { lang.ifEmpty { "Track ${track.trackIndex + 1}" } },
-                                subtitle = listOf(lang, channels).filter { it.isNotEmpty() }.joinToString(" | "),
-                                isSelected = track.isSelected,
-                                onClick = {
-                                    selectTrack(exoPlayer, C.TRACK_TYPE_AUDIO, track.groupIndex, track.trackIndex)
-                                }
-                            )
+                                RadioOptionItem(
+                                    label = track.label.ifEmpty { lang.ifEmpty { "Track ${track.trackIndex + 1}" } },
+                                    subtitle = listOf(lang, channels).filter { it.isNotEmpty() }.joinToString(" | "),
+                                    isSelected = track.isSelected,
+                                    onClick = {
+                                        selectTrack(exoPlayer, C.TRACK_TYPE_AUDIO, track.groupIndex, track.trackIndex)
+                                    }
+                                )
+                            }
                         }
                     }
 
-                    // -- Subtitles --
+                    // -- Subtitles Section (expandable) --
                     if (subtitleTracks.isNotEmpty()) {
-                        item { SettingsDivider() }
                         item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            SectionHeader("Subtitles", Icons.Default.Subtitles)
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        item {
-                            TrackOptionItem(
-                                label = "Off",
-                                subtitle = "Disable subtitles",
-                                isSelected = subtitleTracks.none { it.isSelected },
-                                onClick = {
-                                    exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                                        ?.buildUpon()
-                                        ?.clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                                        ?.build() ?: return@TrackOptionItem
-                                }
-                            )
-                        }
-                        items(subtitleTracks) { track ->
-                            val lang = track.format?.language?.let {
-                                java.util.Locale(it).displayLanguage
-                            } ?: "Track ${track.trackIndex + 1}"
+                            val currentSub = subtitleTracks.firstOrNull { it.isSelected }?.let { track ->
+                                track.format?.language?.let { java.util.Locale(it).displayLanguage }
+                                    ?: track.label.ifEmpty { "On" }
+                            } ?: "Off"
 
-                            TrackOptionItem(
-                                label = track.label.ifEmpty { lang },
-                                subtitle = track.format?.sampleMimeType ?: "",
-                                isSelected = track.isSelected,
-                                onClick = {
-                                    selectTrack(exoPlayer, C.TRACK_TYPE_TEXT, track.groupIndex, track.trackIndex)
-                                }
+                            SettingsRow(
+                                icon = Icons.Default.Subtitles,
+                                title = "Subtitles",
+                                value = currentSub,
+                                isExpanded = subtitlesExpanded,
+                                onClick = { subtitlesExpanded = !subtitlesExpanded }
                             )
+                        }
+
+                        if (subtitlesExpanded) {
+                            item {
+                                RadioOptionItem(
+                                    label = "Off",
+                                    subtitle = "Disable subtitles",
+                                    isSelected = subtitleTracks.none { it.isSelected },
+                                    onClick = {
+                                        exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                            ?.buildUpon()
+                                            ?.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                            ?.build() ?: return@RadioOptionItem
+                                    }
+                                )
+                            }
+                            items(subtitleTracks) { track ->
+                                val lang = track.format?.language?.let {
+                                    java.util.Locale(it).displayLanguage
+                                } ?: "Track ${track.trackIndex + 1}"
+
+                                RadioOptionItem(
+                                    label = track.label.ifEmpty { lang },
+                                    subtitle = track.format?.sampleMimeType ?: "",
+                                    isSelected = track.isSelected,
+                                    onClick = {
+                                        selectTrack(exoPlayer, C.TRACK_TYPE_TEXT, track.groupIndex, track.trackIndex)
+                                    }
+                                )
+                            }
                         }
                     }
 
-                    item { SettingsDivider() }
-
-                    // -- Account Actions --
                     item {
+                        SettingsDivider()
                         Spacer(modifier = Modifier.height(4.dp))
-                        SectionHeader("Account", Icons.Default.ManageAccounts)
-                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                        SettingsActionItem(
+                    // -- Manage Devices --
+                    item {
+                        SettingsRow(
                             icon = Icons.Default.DevicesOther,
-                            label = "Manage Devices",
-                            subtitle = "View and manage connected devices",
+                            title = "Manage Devices",
+                            value = "",
+                            showChevron = true,
                             onClick = onManageSessions
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                    // -- Logout at bottom --
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        SettingsDivider()
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                        SettingsActionItem(
-                            icon = Icons.Default.Logout,
-                            label = "Sign Out",
-                            subtitle = "Logout from this device",
-                            isDanger = true,
-                            onClick = onLogout
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onLogout() }
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Logout,
+                                    contentDescription = null,
+                                    tint = StatusLive,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Sign Out",
+                                    color = StatusLive,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
 
                     // Bottom spacing
@@ -359,25 +402,27 @@ private fun ProfileSection(
     isTV: Boolean
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Avatar
         Box(
             modifier = Modifier
-                .size(if (isTV) 56.dp else 48.dp)
+                .size(if (isTV) 52.dp else 44.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(listOf(GradientGoldStart, GradientGoldEnd))
                 )
-                .border(2.dp, AccentGold.copy(0.5f), CircleShape),
+                .border(1.5.dp, AccentGold.copy(0.5f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = subscriber.name.firstOrNull()?.uppercase() ?: "U",
                 color = Color.Black,
-                fontSize = if (isTV) 24.sp else 20.sp,
+                fontSize = if (isTV) 22.sp else 18.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -386,7 +431,7 @@ private fun ProfileSection(
             Text(
                 text = subscriber.name,
                 color = TextPrimary,
-                fontSize = if (isTV) 18.sp else 16.sp,
+                fontSize = if (isTV) 16.sp else 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -397,14 +442,14 @@ private fun ProfileSection(
                 fontSize = 13.sp
             )
             if (subscriptionStatus != null) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(7.dp)
                             .clip(CircleShape)
                             .background(
                                 if (subscriptionStatus == "Active") StatusSuccess
@@ -414,7 +459,7 @@ private fun ProfileSection(
                     Text(
                         text = if (expiredIn != null) "$subscriptionStatus | $expiredIn" else subscriptionStatus,
                         color = if (subscriptionStatus == "Active") StatusSuccess else StatusLive,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -424,16 +469,22 @@ private fun ProfileSection(
 }
 
 @Composable
-private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
-    Box(
+private fun NowPlayingRow(channel: Channel, isTV: Boolean) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(AccentGold.copy(0.1f))
-            .border(1.dp, AccentGold.copy(0.2f), RoundedCornerShape(14.dp))
-            .padding(14.dp)
+            .height(56.dp)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(
+            imageVector = Icons.Default.PlayCircle,
+            contentDescription = null,
+            tint = AccentGold,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = channel.name,
                 color = TextPrimary,
@@ -442,30 +493,22 @@ private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Stream type badge
-                SettingsBadge(
+                Text(
                     text = channel.streamType.uppercase(),
-                    color = AccentGold
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
                 )
-
-                // DRM badge
                 if (!channel.drmType.isNullOrEmpty()) {
-                    SettingsBadge(
-                        text = "DRM",
-                        color = StatusWarning
-                    )
-                }
-
-                // Premium badge
-                if (channel.premium == 1) {
-                    SettingsBadge(
-                        text = "PREMIUM",
-                        color = AccentGold
+                    Text(
+                        text = "\u2022 DRM",
+                        color = StatusWarning,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -474,57 +517,81 @@ private fun NowPlayingCard(channel: Channel, isTV: Boolean) {
 }
 
 @Composable
-private fun SectionHeader(title: String, icon: ImageVector) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = AccentGold,
-            modifier = Modifier.size(18.dp)
-        )
-        Text(
-            text = title,
-            color = AccentGold,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        )
-    }
-}
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    isExpanded: Boolean = false,
+    showChevron: Boolean = false,
+    onClick: () -> Unit
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
 
-@Composable
-private fun SettingsDivider() {
-    HorizontalDivider(
-        color = SurfaceSeparator,
-        thickness = 1.dp,
-        modifier = Modifier.padding(vertical = 4.dp)
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 90f else 0f,
+        animationSpec = tween(200),
+        label = "chevron"
     )
-}
 
-@Composable
-private fun SettingsBadge(text: String, color: Color) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(0.15f))
-            .border(1.dp, color.copy(0.3f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (isFocused) AccentGoldSoft else Color.Transparent
+            )
+            .then(
+                if (isFocused) Modifier.border(1.5.dp, AccentGold, RoundedCornerShape(12.dp))
+                else Modifier
+            )
+            .clickable { onClick() }
+            .focusRequester(focusRequester)
+            .focusable()
+            .onFocusChanged { isFocused = it.isFocused }
+            .padding(horizontal = 12.dp)
     ) {
-        Text(
-            text = text,
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = AccentGold,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = title,
+                color = TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            if (value.isNotEmpty()) {
+                Text(
+                    text = value,
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = TextMuted,
+                modifier = Modifier
+                    .size(18.dp)
+                    .rotate(chevronRotation)
+            )
+        }
     }
 }
 
 @Composable
-fun TrackOptionItem(
+private fun RadioOptionItem(
     label: String,
     subtitle: String,
     isSelected: Boolean,
@@ -536,38 +603,53 @@ fun TrackOptionItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(
-                when {
-                    isSelected -> AccentGold.copy(0.15f)
-                    isFocused -> AccentGold.copy(0.08f)
-                    else -> Color.Transparent
-                }
+                if (isFocused) AccentGoldSoft else Color.Transparent
             )
             .then(
-                if (isSelected) {
-                    Modifier.border(1.dp, AccentGold.copy(0.3f), RoundedCornerShape(12.dp))
-                } else if (isFocused) {
-                    Modifier.border(1.dp, AccentGold.copy(0.2f), RoundedCornerShape(12.dp))
-                } else Modifier
+                if (isFocused) Modifier.border(1.dp, AccentGold.copy(0.3f), RoundedCornerShape(10.dp))
+                else Modifier
             )
             .clickable { onClick() }
             .focusRequester(focusRequester)
             .focusable()
             .onFocusChanged { isFocused = it.isFocused }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Radio circle
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .border(
+                        2.dp,
+                        if (isSelected) AccentGold else TextMuted,
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(AccentGold)
+                    )
+                }
+            }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
                     color = if (isSelected) AccentGoldLight else TextPrimary,
                     fontSize = 14.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 )
                 if (subtitle.isNotEmpty()) {
                     Text(
@@ -579,77 +661,28 @@ fun TrackOptionItem(
                     )
                 }
             }
-
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Selected",
-                    tint = AccentGold,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
     }
 }
 
 @Composable
-private fun SettingsActionItem(
-    icon: ImageVector,
+private fun SettingsDivider() {
+    HorizontalDivider(
+        color = SurfaceSeparator,
+        thickness = 0.5.dp,
+        modifier = Modifier.padding(vertical = 2.dp)
+    )
+}
+
+// Keep the public TrackOptionItem for backward compat
+@Composable
+fun TrackOptionItem(
     label: String,
     subtitle: String,
-    isDanger: Boolean = false,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
-    val accentColor = if (isDanger) StatusLive else AccentGold
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isFocused) accentColor.copy(0.1f) else Color.White.copy(0.04f))
-            .then(
-                if (isFocused) Modifier.border(1.dp, accentColor.copy(0.3f), RoundedCornerShape(12.dp))
-                else Modifier
-            )
-            .clickable { onClick() }
-            .focusRequester(focusRequester)
-            .focusable()
-            .onFocusChanged { isFocused = it.isFocused }
-            .padding(14.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isFocused) accentColor else TextMuted,
-                modifier = Modifier.size(22.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    color = if (isDanger && isFocused) accentColor else TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = subtitle,
-                    color = TextMuted,
-                    fontSize = 11.sp
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = TextDisabled,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
+    RadioOptionItem(label = label, subtitle = subtitle, isSelected = isSelected, onClick = onClick)
 }
 
 // -- Track extraction helpers --

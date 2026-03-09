@@ -1,5 +1,12 @@
 package com.shadow.hellotv.ui.tv
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,6 +14,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,6 +23,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -32,7 +42,15 @@ import com.shadow.hellotv.model.SubscriptionInfo
 import com.shadow.hellotv.ui.theme.*
 import com.shadow.hellotv.utils.SessionManager
 
-enum class SettingsTab { PROFILE, VIDEO, AUDIO, SESSIONS }
+private enum class ExpandedSection {
+    NONE, QUALITY, AUDIO, SUBTITLES, RESIZE
+}
+
+private enum class ResizeMode(val label: String) {
+    FIT("Fit"),
+    ZOOM("Zoom"),
+    FILL("Fill")
+}
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -47,7 +65,42 @@ fun TvSettingsPanel(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var activeTab by remember { mutableStateOf(SettingsTab.PROFILE) }
+    var expandedSection by remember { mutableStateOf(ExpandedSection.NONE) }
+    var currentResizeMode by remember { mutableStateOf(ResizeMode.FIT) }
+
+    val tracks = exoPlayer?.currentTracks ?: Tracks.EMPTY
+    val videoGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }
+    val audioGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+    val subtitleGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
+
+    // Derive current values for display
+    val currentQuality = remember(tracks) {
+        val selectedVideo = videoGroups.firstNotNullOfOrNull { group ->
+            (0 until group.length).firstOrNull { group.isTrackSelected(it) }
+                ?.let { group.getTrackFormat(it) }
+        }
+        selectedVideo?.let { "${it.height}p" } ?: "Auto"
+    }
+
+    val currentAudio = remember(tracks) {
+        val selectedAudio = audioGroups.firstNotNullOfOrNull { group ->
+            (0 until group.length).firstOrNull { group.isTrackSelected(it) }
+                ?.let { group.getTrackFormat(it) }
+        }
+        selectedAudio?.let { fmt ->
+            fmt.label ?: fmt.language?.uppercase() ?: "Default"
+        } ?: "Default"
+    }
+
+    val currentSubtitle = remember(tracks) {
+        val selectedSub = subtitleGroups.firstNotNullOfOrNull { group ->
+            (0 until group.length).firstOrNull { group.isTrackSelected(it) }
+                ?.let { group.getTrackFormat(it) }
+        }
+        selectedSub?.let { fmt ->
+            fmt.label ?: fmt.language?.uppercase() ?: "On"
+        } ?: "Off"
+    }
 
     Box(
         modifier = modifier
@@ -55,343 +108,577 @@ fun TvSettingsPanel(
                 Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        TvSurface.copy(alpha = 0.88f),
-                        TvSurface.copy(alpha = 0.94f)
-                    )
+                        TvSurface.copy(alpha = 0.85f),
+                        TvSurface.copy(alpha = 0.96f),
+                        TvSurface
+                    ),
+                    startX = 0f,
+                    endX = 400f
                 )
             )
-            .padding(16.dp)
+            .padding(top = 20.dp, start = 8.dp, end = 20.dp, bottom = 20.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Tab row
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                TabItem(SettingsTab.PROFILE, "Profile", Icons.Default.Person, activeTab) { activeTab = it }
-                TabItem(SettingsTab.VIDEO, "Video", Icons.Default.Videocam, activeTab) { activeTab = it }
-                TabItem(SettingsTab.AUDIO, "Audio", Icons.Default.VolumeUp, activeTab) { activeTab = it }
-                TabItem(SettingsTab.SESSIONS, "Sessions", Icons.Default.Devices, activeTab) { activeTab = it }
-            }
+            // Settings title
+            Text(
+                text = "Settings",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, bottom = 20.dp)
+            )
 
-            // Tab content
-            when (activeTab) {
-                SettingsTab.PROFILE -> ProfileTab(subscriber, subscriptionInfo, onLogout)
-                SettingsTab.VIDEO -> VideoTrackTab(exoPlayer)
-                SettingsTab.AUDIO -> AudioTrackTab(exoPlayer)
-                SettingsTab.SESSIONS -> SessionsTab(onManageSessions)
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // ── Profile section ──
+                item {
+                    ProfileRow(subscriber, subscriptionInfo)
+                }
+
+                item { SettingsDivider() }
+
+                // ── Quality row ──
+                item {
+                    SettingsRow(
+                        icon = Icons.Default.HighQuality,
+                        title = "Quality",
+                        value = currentQuality,
+                        isExpanded = expandedSection == ExpandedSection.QUALITY,
+                        onClick = {
+                            expandedSection = if (expandedSection == ExpandedSection.QUALITY)
+                                ExpandedSection.NONE else ExpandedSection.QUALITY
+                        }
+                    )
+                }
+
+                // Quality sub-options
+                item {
+                    AnimatedVisibility(
+                        visible = expandedSection == ExpandedSection.QUALITY,
+                        enter = expandVertically(tween(250)) + fadeIn(tween(200)),
+                        exit = shrinkVertically(tween(200)) + fadeOut(tween(150))
+                    ) {
+                        Column(modifier = Modifier.padding(start = 40.dp, end = 8.dp)) {
+                            // Auto option
+                            val hasOverride = exoPlayer?.trackSelectionParameters
+                                ?.overrides?.any { it.key.type == C.TRACK_TYPE_VIDEO } == true
+                            TrackSubItem(
+                                label = "Auto",
+                                detail = "Adaptive",
+                                isSelected = !hasOverride,
+                                onClick = {
+                                    exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                        ?.buildUpon()
+                                        ?.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                                        ?.build() ?: return@TrackSubItem
+                                }
+                            )
+                            videoGroups.forEach { group ->
+                                for (trackIdx in 0 until group.length) {
+                                    val format = group.getTrackFormat(trackIdx)
+                                    val isSelected = group.isTrackSelected(trackIdx)
+                                    TrackSubItem(
+                                        label = "${format.height}p",
+                                        detail = "${format.width}x${format.height} · ${format.bitrate / 1000}kbps",
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                                ?.buildUpon()
+                                                ?.setOverrideForType(
+                                                    androidx.media3.common.TrackSelectionOverride(
+                                                        group.mediaTrackGroup, trackIdx
+                                                    )
+                                                )
+                                                ?.build() ?: return@TrackSubItem
+                                        }
+                                    )
+                                }
+                            }
+                            if (videoGroups.isEmpty()) {
+                                Text(
+                                    "No video tracks available",
+                                    color = TextMuted,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Audio row ──
+                item {
+                    SettingsRow(
+                        icon = Icons.Default.Audiotrack,
+                        title = "Audio",
+                        value = currentAudio,
+                        isExpanded = expandedSection == ExpandedSection.AUDIO,
+                        onClick = {
+                            expandedSection = if (expandedSection == ExpandedSection.AUDIO)
+                                ExpandedSection.NONE else ExpandedSection.AUDIO
+                        }
+                    )
+                }
+
+                // Audio sub-options
+                item {
+                    AnimatedVisibility(
+                        visible = expandedSection == ExpandedSection.AUDIO,
+                        enter = expandVertically(tween(250)) + fadeIn(tween(200)),
+                        exit = shrinkVertically(tween(200)) + fadeOut(tween(150))
+                    ) {
+                        Column(modifier = Modifier.padding(start = 40.dp, end = 8.dp)) {
+                            audioGroups.forEach { group ->
+                                for (trackIdx in 0 until group.length) {
+                                    val format = group.getTrackFormat(trackIdx)
+                                    val isSelected = group.isTrackSelected(trackIdx)
+                                    TrackSubItem(
+                                        label = format.label
+                                            ?: format.language?.uppercase()
+                                            ?: "Track ${trackIdx + 1}",
+                                        detail = "${format.channelCount}ch · ${format.sampleRate / 1000}kHz",
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                                ?.buildUpon()
+                                                ?.setOverrideForType(
+                                                    androidx.media3.common.TrackSelectionOverride(
+                                                        group.mediaTrackGroup, trackIdx
+                                                    )
+                                                )
+                                                ?.build() ?: return@TrackSubItem
+                                        }
+                                    )
+                                }
+                            }
+                            if (audioGroups.isEmpty()) {
+                                Text(
+                                    "No audio tracks available",
+                                    color = TextMuted,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Subtitles row ──
+                item {
+                    SettingsRow(
+                        icon = Icons.Default.ClosedCaption,
+                        title = "Subtitles",
+                        value = currentSubtitle,
+                        isExpanded = expandedSection == ExpandedSection.SUBTITLES,
+                        onClick = {
+                            expandedSection = if (expandedSection == ExpandedSection.SUBTITLES)
+                                ExpandedSection.NONE else ExpandedSection.SUBTITLES
+                        }
+                    )
+                }
+
+                // Subtitle sub-options
+                item {
+                    AnimatedVisibility(
+                        visible = expandedSection == ExpandedSection.SUBTITLES,
+                        enter = expandVertically(tween(250)) + fadeIn(tween(200)),
+                        exit = shrinkVertically(tween(200)) + fadeOut(tween(150))
+                    ) {
+                        Column(modifier = Modifier.padding(start = 40.dp, end = 8.dp)) {
+                            // Off option
+                            val hasSubOverride = subtitleGroups.any { group ->
+                                (0 until group.length).any { group.isTrackSelected(it) }
+                            }
+                            TrackSubItem(
+                                label = "Off",
+                                detail = "Disable subtitles",
+                                isSelected = !hasSubOverride,
+                                onClick = {
+                                    exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                        ?.buildUpon()
+                                        ?.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                        ?.setIgnoredTextSelectionFlags(C.SELECTION_FLAG_DEFAULT.inv())
+                                        ?.build() ?: return@TrackSubItem
+                                }
+                            )
+                            subtitleGroups.forEach { group ->
+                                for (trackIdx in 0 until group.length) {
+                                    val format = group.getTrackFormat(trackIdx)
+                                    val isSelected = group.isTrackSelected(trackIdx)
+                                    TrackSubItem(
+                                        label = format.label
+                                            ?: format.language?.uppercase()
+                                            ?: "Subtitle ${trackIdx + 1}",
+                                        detail = format.language ?: "",
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
+                                                ?.buildUpon()
+                                                ?.setOverrideForType(
+                                                    androidx.media3.common.TrackSelectionOverride(
+                                                        group.mediaTrackGroup, trackIdx
+                                                    )
+                                                )
+                                                ?.build() ?: return@TrackSubItem
+                                        }
+                                    )
+                                }
+                            }
+                            if (subtitleGroups.isEmpty()) {
+                                Text(
+                                    "No subtitles available",
+                                    color = TextMuted,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Resize row ──
+                item {
+                    SettingsRow(
+                        icon = Icons.Default.AspectRatio,
+                        title = "Resize",
+                        value = currentResizeMode.label,
+                        isExpanded = expandedSection == ExpandedSection.RESIZE,
+                        onClick = {
+                            expandedSection = if (expandedSection == ExpandedSection.RESIZE)
+                                ExpandedSection.NONE else ExpandedSection.RESIZE
+                        }
+                    )
+                }
+
+                // Resize sub-options
+                item {
+                    AnimatedVisibility(
+                        visible = expandedSection == ExpandedSection.RESIZE,
+                        enter = expandVertically(tween(250)) + fadeIn(tween(200)),
+                        exit = shrinkVertically(tween(200)) + fadeOut(tween(150))
+                    ) {
+                        Column(modifier = Modifier.padding(start = 40.dp, end = 8.dp)) {
+                            ResizeMode.entries.forEach { mode ->
+                                TrackSubItem(
+                                    label = mode.label,
+                                    detail = when (mode) {
+                                        ResizeMode.FIT -> "Fit within screen"
+                                        ResizeMode.ZOOM -> "Zoom to fill, may crop"
+                                        ResizeMode.FILL -> "Stretch to fill"
+                                    },
+                                    isSelected = currentResizeMode == mode,
+                                    onClick = {
+                                        currentResizeMode = mode
+                                        exoPlayer?.videoScalingMode = when (mode) {
+                                            ResizeMode.FIT -> C.VIDEO_SCALING_MODE_DEFAULT
+                                            ResizeMode.ZOOM -> C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
+                                            ResizeMode.FILL -> C.VIDEO_SCALING_MODE_SCALE_TO_FIT
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item { SettingsDivider() }
+
+                // ── Sessions row ──
+                item {
+                    SettingsRow(
+                        icon = Icons.Default.Devices,
+                        title = "Sessions",
+                        value = "Manage",
+                        isExpanded = false,
+                        onClick = onManageSessions
+                    )
+                }
+
+                // ── Logout row ──
+                item {
+                    LogoutRow(onLogout)
+                }
+
+                // Bottom spacing
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TabItem(
-    tab: SettingsTab,
-    label: String,
+private fun ProfileRow(
+    subscriber: Subscriber?,
+    subscriptionInfo: SubscriptionInfo?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(AccentGold.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                tint = AccentGold,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = subscriber?.name ?: "User",
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val statusText = subscriptionInfo?.status ?: "Active"
+                val statusColor = if (statusText.equals("active", ignoreCase = true))
+                    StatusSuccess else StatusLive
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(statusColor)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = statusText,
+                    color = statusColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                subscriptionInfo?.expiredIn?.let {
+                    Text(
+                        text = " · $it",
+                        color = TextMuted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        thickness = 0.5.dp,
+        color = TvSeparator
+    )
+}
+
+@Composable
+private fun SettingsRow(
     icon: ImageVector,
-    activeTab: SettingsTab,
-    onSelect: (SettingsTab) -> Unit
+    title: String,
+    value: String,
+    isExpanded: Boolean,
+    onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val isActive = tab == activeTab
+    val borderWidth by animateDpAsState(
+        targetValue = when {
+            isFocused -> 1.5.dp
+            isExpanded -> 1.dp
+            else -> 0.dp
+        },
+        animationSpec = tween(150),
+        label = "borderWidth"
+    )
+    val borderColor = when {
+        isFocused -> AccentGold
+        isExpanded -> AccentGold.copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
     val bgColor = when {
-        isActive -> AccentGold
-        isFocused -> AccentGold.copy(alpha = 0.3f)
-        else -> SurfaceElevated
+        isFocused -> AccentGoldSoft
+        isExpanded -> AccentGold.copy(alpha = 0.06f)
+        else -> Color.Transparent
     }
 
-    Box(
+    Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 1.dp)
+            .height(56.dp)
+            .clip(RoundedCornerShape(10.dp))
             .background(bgColor)
+            .then(
+                if (borderWidth > 0.dp) Modifier.border(
+                    borderWidth,
+                    borderColor,
+                    RoundedCornerShape(10.dp)
+                ) else Modifier
+            )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
-            .clickable { onSelect(tab) }
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = if (isActive) Color.Black else if (isFocused) AccentGoldLight else TextMuted, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(
-                label,
-                color = if (isActive) Color.Black else if (isFocused) Color.White else TextSecondary,
-                fontSize = 12.sp,
-                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isFocused) AccentGold else TextMuted,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(Modifier.width(14.dp))
+
+        Text(
+            text = title,
+            color = TextPrimary,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.weight(1f)
+        )
+
+        Text(
+            text = value,
+            color = if (isFocused) AccentGoldLight else TextSecondary,
+            fontSize = 14.sp
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        Icon(
+            imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown
+            else Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }
 
 @Composable
-private fun ProfileTab(
-    subscriber: Subscriber?,
-    subscriptionInfo: SubscriptionInfo?,
-    onLogout: () -> Unit
-) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item {
-            // User card
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCard)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(AccentGold.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Person, null, tint = AccentGold, modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                subscriber?.name ?: "User",
-                                color = TextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            )
-                            Text(
-                                subscriber?.phone ?: "",
-                                color = TextMuted,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Subscription info
-        item {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCard)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Subscription", color = TextMuted, fontSize = 12.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Status", color = TextSecondary, fontSize = 13.sp)
-                        Text(
-                            subscriptionInfo?.status ?: "Active",
-                            color = StatusSuccess,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
-                        )
-                    }
-                    subscriptionInfo?.expiredIn?.let {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Expires In", color = TextSecondary, fontSize = 13.sp)
-                            Text(it, color = TextPrimary, fontSize = 13.sp)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Logout
-        item {
-            var isFocused by remember { mutableStateOf(false) }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (isFocused) StatusLive.copy(alpha = 0.2f) else SurfaceCard)
-                    .onFocusChanged { isFocused = it.isFocused }
-                    .focusable()
-                    .clickable { onLogout() }
-                    .padding(14.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Logout, null, tint = StatusLive, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Sign Out", color = StatusLive, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                }
-            }
-        }
-    }
-}
-
-@OptIn(UnstableApi::class)
-@Composable
-private fun VideoTrackTab(exoPlayer: ExoPlayer?) {
-    val tracks = exoPlayer?.currentTracks ?: Tracks.EMPTY
-    val videoGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item {
-            Text("Video Quality", color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
-        }
-
-        // Auto option
-        item {
-            TrackOption(
-                label = "Auto",
-                detail = "Adaptive",
-                isSelected = true,
-                onClick = {
-                    exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                        ?.buildUpon()
-                        ?.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                        ?.build() ?: return@TrackOption
-                }
-            )
-        }
-
-        videoGroups.forEachIndexed { groupIdx, group ->
-            for (trackIdx in 0 until group.length) {
-                val format = group.getTrackFormat(trackIdx)
-                val isSelected = group.isTrackSelected(trackIdx)
-                item {
-                    TrackOption(
-                        label = "${format.width}x${format.height}",
-                        detail = "${(format.bitrate / 1000)}kbps",
-                        isSelected = isSelected,
-                        onClick = {
-                            exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                                ?.buildUpon()
-                                ?.setOverrideForType(
-                                    androidx.media3.common.TrackSelectionOverride(group.mediaTrackGroup, trackIdx)
-                                )
-                                ?.build() ?: return@TrackOption
-                        }
-                    )
-                }
-            }
-        }
-
-        if (videoGroups.isEmpty()) {
-            item {
-                Text("No video tracks available", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(8.dp))
-            }
-        }
-    }
-}
-
-@OptIn(UnstableApi::class)
-@Composable
-private fun AudioTrackTab(exoPlayer: ExoPlayer?) {
-    val tracks = exoPlayer?.currentTracks ?: Tracks.EMPTY
-    val audioGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item {
-            Text("Audio Track", color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
-        }
-
-        audioGroups.forEachIndexed { groupIdx, group ->
-            for (trackIdx in 0 until group.length) {
-                val format = group.getTrackFormat(trackIdx)
-                val isSelected = group.isTrackSelected(trackIdx)
-                item {
-                    TrackOption(
-                        label = format.language?.uppercase() ?: "Track ${trackIdx + 1}",
-                        detail = format.label ?: "${format.channelCount}ch ${format.sampleRate / 1000}kHz",
-                        isSelected = isSelected,
-                        onClick = {
-                            exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                                ?.buildUpon()
-                                ?.setOverrideForType(
-                                    androidx.media3.common.TrackSelectionOverride(group.mediaTrackGroup, trackIdx)
-                                )
-                                ?.build() ?: return@TrackOption
-                        }
-                    )
-                }
-            }
-        }
-
-        if (audioGroups.isEmpty()) {
-            item {
-                Text("No audio tracks available", color = TextMuted, fontSize = 13.sp, modifier = Modifier.padding(8.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SessionsTab(onManageSessions: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Default.Devices, null, tint = TextMuted, modifier = Modifier.size(40.dp))
-        Spacer(Modifier.height(8.dp))
-        Text("Manage your connected devices", color = TextMuted, fontSize = 13.sp)
-        Spacer(Modifier.height(12.dp))
-        var isFocused by remember { mutableStateOf(false) }
-        Button(
-            onClick = onManageSessions,
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentGold),
-            modifier = Modifier
-                .onFocusChanged { isFocused = it.isFocused }
-                .focusable()
-        ) {
-            Text("Manage Sessions")
-        }
-    }
-}
-
-@Composable
-private fun TrackOption(
+private fun TrackSubItem(
     label: String,
     detail: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val bgColor = when {
-        isSelected -> AccentGold.copy(alpha = 0.2f)
-        isFocused -> AccentGold.copy(alpha = 0.08f)
-        else -> SurfaceCard
-    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 1.dp)
+            .height(44.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .then(
+            .background(
                 when {
-                    isSelected -> Modifier.border(1.dp, AccentGold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                    isFocused -> Modifier.border(1.dp, AccentGold.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                    else -> Modifier
+                    isFocused -> AccentGoldSoft
+                    else -> Color.Transparent
                 }
+            )
+            .then(
+                if (isFocused) Modifier.border(1.dp, AccentGold.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                else Modifier
             )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(12.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Radio indicator
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .border(
+                    width = if (isSelected) 5.dp else 1.5.dp,
+                    color = if (isSelected) AccentGold
+                    else if (isFocused) AccentGold.copy(alpha = 0.5f)
+                    else TextMuted.copy(alpha = 0.5f),
+                    shape = CircleShape
+                )
+        )
+
+        Spacer(Modifier.width(12.dp))
+
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, color = if (isSelected) AccentGoldLight else TextPrimary, fontSize = 14.sp)
-            Text(detail, color = TextMuted, fontSize = 11.sp)
+            Text(
+                text = label,
+                color = if (isSelected) AccentGoldLight else TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            )
+            if (detail.isNotEmpty()) {
+                Text(
+                    text = detail,
+                    color = TextMuted,
+                    fontSize = 11.sp
+                )
+            }
         }
+
         if (isSelected) {
-            Icon(Icons.Default.CheckCircle, null, tint = AccentGold, modifier = Modifier.size(18.dp))
+            Icon(
+                Icons.Default.Check,
+                contentDescription = null,
+                tint = AccentGold,
+                modifier = Modifier.size(16.dp)
+            )
         }
+    }
+}
+
+@Composable
+private fun LogoutRow(onLogout: () -> Unit) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 1.dp)
+            .height(56.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (isFocused) StatusLive.copy(alpha = 0.12f) else Color.Transparent
+            )
+            .then(
+                if (isFocused) Modifier.border(1.5.dp, StatusLive.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                else Modifier
+            )
+            .onFocusChanged { isFocused = it.isFocused }
+            .focusable()
+            .clickable { onLogout() }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Logout,
+            contentDescription = null,
+            tint = StatusLive,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(Modifier.width(14.dp))
+
+        Text(
+            text = "Sign Out",
+            color = StatusLive,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
