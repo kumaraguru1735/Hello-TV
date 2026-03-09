@@ -40,6 +40,7 @@ private fun log(msg: String) { Log.e(TAG, msg); println("[$TAG] $msg") }
 fun ExoPlayerView(
     channel: Channel,
     onPlayerReady: (ExoPlayer) -> Unit = {},
+    resizeMode: Int = AspectRatioFrameLayout.RESIZE_MODE_FIT,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -241,7 +242,7 @@ fun ExoPlayerView(
             PlayerView(ctx).apply {
                 player = exoPlayer
                 useController = false
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                this.resizeMode = resizeMode
                 setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
@@ -251,6 +252,7 @@ fun ExoPlayerView(
         },
         update = { view ->
             view.player = exoPlayer
+            view.resizeMode = resizeMode
         },
         modifier = modifier.fillMaxSize()
     )
