@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,11 @@ import com.shadow.hellotv.model.Category
 import com.shadow.hellotv.model.Channel
 import com.shadow.hellotv.model.Language
 import com.shadow.hellotv.ui.theme.*
+
+private val AccentGold = Color(0xFFFFB800)
+private val TvSurface = Color(0xFF0D0D0D)
+private val TvSurfaceCard = Color(0xFF1A1A1A)
+private val TvSeparator = Color(0xFF2A2A2A)
 
 @Composable
 fun TvChannelMenu(
@@ -61,63 +67,73 @@ fun TvChannelMenu(
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xF00B1622),
-                        Color(0xE00B1622),
-                        Color(0x800B1622),
+                        TvSurface.copy(alpha = 0.97f),
+                        TvSurface.copy(alpha = 0.95f),
+                        TvSurface.copy(alpha = 0.85f),
                         Color.Transparent
                     )
                 )
             )
-            .padding(12.dp)
+            .padding(top = 12.dp, start = 12.dp, bottom = 12.dp, end = 4.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ── Language filter chips ──
-            Text("Language", color = TextMuted, fontSize = 11.sp, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+            // ── Language tabs at top ──
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(bottom = 10.dp)
             ) {
                 item {
-                    FilterChipItem(
+                    TvLanguageTab(
                         label = "All",
                         selected = selectedLanguageId == null,
                         onClick = { onLanguageSelected(null) }
                     )
                 }
                 items(languages) { lang ->
-                    FilterChipItem(
-                        label = lang.name,
+                    TvLanguageTab(
+                        label = lang.name.lowercase().replaceFirstChar { it.uppercase() },
                         selected = selectedLanguageId == lang.id,
                         onClick = { onLanguageSelected(if (selectedLanguageId == lang.id) null else lang.id) }
                     )
                 }
             }
 
-            // ── Main content: Categories + Channels ──
+            // ── Categories (left) + Channels (right) ──
             Row(modifier = Modifier.fillMaxSize()) {
                 // Category column
                 LazyColumn(
                     modifier = Modifier
-                        .width(120.dp)
+                        .width(130.dp)
                         .fillMaxHeight()
-                        .padding(end = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(end = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     item {
-                        CategoryItem(
+                        TvCategoryItem(
                             name = "All",
                             selected = selectedCategoryId == null,
                             onClick = { onCategorySelected(null) }
                         )
                     }
                     items(categories) { cat ->
-                        CategoryItem(
-                            name = cat.name,
+                        TvCategoryItem(
+                            name = if (cat.name.all { it.isUpperCase() || !it.isLetter() } && cat.name.length <= 3) cat.name
+                                else cat.name.lowercase().replaceFirstChar { it.uppercase() },
                             selected = selectedCategoryId == cat.id,
                             onClick = { onCategorySelected(if (selectedCategoryId == cat.id) null else cat.id) }
                         )
                     }
                 }
+
+                // Vertical separator
+                Box(
+                    modifier = Modifier
+                        .width(0.5.dp)
+                        .fillMaxHeight()
+                        .background(TvSeparator)
+                )
+
+                Spacer(Modifier.width(6.dp))
 
                 // Channel list
                 LazyColumn(
@@ -125,14 +141,24 @@ fun TvChannelMenu(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
                     itemsIndexed(channels) { index, channel ->
-                        ChannelItem(
+                        TvChannelItem(
                             channel = channel,
                             isSelected = index == selectedChannelIndex,
                             onClick = { onChannelSelected(index) }
                         )
+                        // Separator
+                        if (index < channels.size - 1) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 48.dp)
+                                    .height(0.5.dp)
+                                    .background(TvSeparator.copy(alpha = 0.5f))
+                            )
+                        }
                     }
                 }
             }
@@ -141,152 +167,150 @@ fun TvChannelMenu(
 }
 
 @Composable
-private fun FilterChipItem(
+private fun TvLanguageTab(
     label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val bgColor = when {
-        selected -> HotstarBlue
-        isFocused -> HotstarBlue.copy(alpha = 0.3f)
-        else -> SurfaceElevated
-    }
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
+            .clip(RoundedCornerShape(6.dp))
+            .then(
+                when {
+                    selected -> Modifier.background(AccentGold)
+                    isFocused -> Modifier
+                        .background(AccentGold.copy(alpha = 0.2f))
+                        .border(1.dp, AccentGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    else -> Modifier
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
+                }
+            )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
             label,
-            color = if (selected || isFocused) Color.White else TextSecondary,
-            fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            color = when {
+                selected -> Color.Black
+                isFocused -> AccentGold
+                else -> Color.White.copy(alpha = 0.7f)
+            },
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
 
 @Composable
-private fun CategoryItem(
+private fun TvCategoryItem(
     name: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val bgColor = when {
-        selected -> HotstarBlue.copy(alpha = 0.2f)
-        isFocused -> SurfaceOverlay
-        else -> Color.Transparent
-    }
 
-    Box(
+    Text(
+        name,
+        color = when {
+            selected -> Color.White
+            isFocused -> AccentGold
+            else -> Color.White.copy(alpha = 0.4f)
+        },
+        fontSize = 14.sp,
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
+            .clip(RoundedCornerShape(6.dp))
             .then(
-                if (selected) Modifier.border(1.dp, HotstarBlue.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                else Modifier
+                when {
+                    isFocused -> Modifier.background(Color.White.copy(alpha = 0.05f))
+                    else -> Modifier
+                }
             )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 8.dp)
-    ) {
-        Text(
-            name,
-            color = if (selected) HotstarBlueLight else if (isFocused) TextPrimary else TextSecondary,
-            fontSize = 13.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    )
 }
 
 @Composable
-private fun ChannelItem(
+private fun TvChannelItem(
     channel: Channel,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val bgColor = when {
-        isSelected -> HotstarBlue.copy(alpha = 0.2f)
-        isFocused -> SurfaceOverlay
-        else -> Color.Transparent
-    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
+            .clip(RoundedCornerShape(6.dp))
             .then(
-                if (isSelected) Modifier.border(1.dp, HotstarBlue.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                else Modifier
+                when {
+                    isSelected -> Modifier
+                        .border(1.dp, AccentGold, RoundedCornerShape(6.dp))
+                        .background(AccentGold.copy(alpha = 0.08f))
+                    isFocused -> Modifier
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                    else -> Modifier
+                }
             )
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clickable { onClick() }
-            .padding(8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Channel number
-        Text(
-            channel.channelNo.toString(),
-            color = TextMuted,
-            fontSize = 11.sp,
-            modifier = Modifier.width(28.dp)
-        )
-
         // Channel image
         if (channel.image.isNotEmpty()) {
             AsyncImage(
                 model = channel.image,
                 contentDescription = channel.name,
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(36.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceElevated)
+                    .background(Color.White.copy(alpha = 0.05f))
             )
         } else {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(36.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceElevated),
+                    .background(Color.White.copy(alpha = 0.05f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LiveTv, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.LiveTv, null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(20.dp))
             }
         }
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(10.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                channel.name,
-                color = if (isSelected) HotstarBlueLight else TextPrimary,
-                fontSize = 13.sp,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Text(
+            channel.name,
+            color = if (isSelected) Color.White else if (isFocused) Color.White else Color.White.copy(alpha = 0.7f),
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
 
-        // Live indicator
+        // Equalizer icon for playing channel
         if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(StatusLive)
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                Icons.Default.Equalizer,
+                contentDescription = "Playing",
+                tint = AccentGold,
+                modifier = Modifier.size(18.dp)
             )
         }
     }

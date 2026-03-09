@@ -56,6 +56,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ── Filters ──
     var selectedCategoryId by mutableStateOf<Int?>(null)
     var selectedLanguageId by mutableStateOf<Int?>(null)
+    var searchQuery by mutableStateOf("")
 
     // ── Player ──
     var selectedChannelIndex by mutableIntStateOf(0)
@@ -81,7 +82,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun applyFilters() {
         channels = allChannels.filter { ch ->
             (selectedCategoryId == null || ch.categoryId == selectedCategoryId) &&
-                    (selectedLanguageId == null || ch.languageId == selectedLanguageId)
+                    (selectedLanguageId == null || ch.languageId == selectedLanguageId) &&
+                    (searchQuery.isBlank() || ch.name.contains(searchQuery, ignoreCase = true))
         }
         if (selectedChannelIndex >= channels.size) {
             selectedChannelIndex = 0
