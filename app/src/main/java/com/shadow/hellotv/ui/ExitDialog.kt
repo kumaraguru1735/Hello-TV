@@ -83,7 +83,7 @@ private fun ExitDialogContent(onCancel: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
+            .background(PlayerOverlay)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }

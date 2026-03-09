@@ -251,7 +251,7 @@ private fun PortraitPlayer(
                 .padding(horizontal = 10.dp)
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black)
+                .background(PlayerBackground)
                 .clickable { showVideoOverlay = !showVideoOverlay }
         ) {
             vm.channels.getOrNull(vm.selectedChannelIndex)?.let { channel ->
@@ -271,7 +271,7 @@ private fun PortraitPlayer(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.2f))
+                        .background(PlayerOverlay.copy(alpha = 0.3f))
                 ) {
                     // Center: play/pause
                     IconButton(
@@ -303,12 +303,12 @@ private fun PortraitPlayer(
                             .padding(8.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
+                            .background(PlayerControlBg)
                     ) {
                         Icon(
                             if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
                             contentDescription = if (isMuted) "Unmute" else "Mute",
-                            tint = Color.White,
+                            tint = if (isMuted) StatusLive else TextPrimary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -321,12 +321,12 @@ private fun PortraitPlayer(
                             .padding(8.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
+                            .background(PlayerControlBg)
                     ) {
                         Icon(
                             Icons.Default.Fullscreen,
                             contentDescription = "Fullscreen",
-                            tint = Color.White,
+                            tint = TextPrimary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -563,7 +563,7 @@ private fun FullscreenPlayer(
         if (showBrightnessFeedback) { delay(1500); showBrightnessFeedback = false }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier.fillMaxSize().background(PlayerBackground)) {
         // Video player
         vm.channels.getOrNull(vm.selectedChannelIndex)?.let { channel ->
             ExoPlayerView(
@@ -575,7 +575,10 @@ private fun FullscreenPlayer(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTapGestures(
-                            onTap = { if (!isLocked) onToggleControls() },
+                            onTap = {
+                                // Tap toggles controls (unlock button when locked, full controls when unlocked)
+                                onToggleControls()
+                            },
                             onDoubleTap = { offset ->
                                 if (!isLocked) {
                                     if (offset.x < size.width / 2) vm.previousChannel()
@@ -618,26 +621,27 @@ private fun FullscreenPlayer(
             )
         }
 
-        // Lock overlay - show unlock button only
+        // Lock overlay - show unlock button at bottom center
         if (isLocked) {
-            Box(
+            AnimatedVisibility(
+                visible = showControls,
+                enter = fadeIn(),
+                exit = fadeOut(),
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .clickable { /* absorb taps */ }
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp)
             ) {
-                AnimatedVisibility(
-                    visible = showControls,
-                    enter = fadeIn(),
-                    exit = fadeOut()
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(PlayerControlBg)
+                        .clickable { isLocked = false }
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    IconButton(
-                        onClick = { isLocked = false },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                    ) {
-                        Icon(Icons.Default.LockOpen, "Unlock", tint = AccentGold, modifier = Modifier.size(28.dp))
-                    }
+                    Icon(Icons.Default.LockOpen, "Unlock", tint = AccentGold, modifier = Modifier.size(22.dp))
+                    Text("Tap to Unlock", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -854,12 +858,12 @@ private fun FullscreenPlayer(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.7f))
+                    .background(PlayerControlBg)
                     .padding(12.dp)
             ) {
                 Icon(Icons.Default.BrightnessHigh, null, tint = AccentGold, modifier = Modifier.size(28.dp))
                 Spacer(Modifier.height(4.dp))
-                Text("${(currentBrightness * 100).toInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("${(currentBrightness * 100).toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -875,7 +879,7 @@ private fun FullscreenPlayer(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.7f))
+                    .background(PlayerControlBg)
                     .padding(12.dp)
             ) {
                 Icon(
@@ -885,7 +889,7 @@ private fun FullscreenPlayer(
                     null, tint = AccentGold, modifier = Modifier.size(28.dp)
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("${(currentVolume * 100f / maxVol).toInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("${(currentVolume * 100f / maxVol).toInt()}%", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
